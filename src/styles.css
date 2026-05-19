@@ -172,6 +172,8 @@ h1 {
 
 .top-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 10px;
   align-items: center;
 }
@@ -344,6 +346,7 @@ h1 {
 .turtle-card {
   position: relative;
   z-index: 2;
+  overflow: hidden;
   width: min(100%, 240px);
   padding: 8px;
   border-radius: 38px;
@@ -354,13 +357,37 @@ h1 {
     0 18px 30px rgba(31, 74, 51, 0.08);
 }
 
+.turtle-frame-stack {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+.turtle-frame-align {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(var(--frame-shift-x, 0%), var(--frame-shift-y, 0%), 0);
+  transition: transform 120ms linear;
+  will-change: transform;
+}
+
 .turtle-image {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   object-fit: contain;
+  object-position: center bottom;
   filter: drop-shadow(0 22px 34px rgba(25, 67, 46, 0.22));
   transform-origin: center bottom;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.turtle-image-current {
+  opacity: 1;
 }
 
 .turtle-badge {
@@ -388,7 +415,7 @@ h1 {
 }
 
 .motion-celebrate .turtle-image {
-  animation: turtle-celebrate 1.05s ease-in-out infinite alternate;
+  animation: turtle-celebrate 1.15s ease-in-out infinite alternate;
 }
 
 .motion-comfort .turtle-image {
@@ -405,7 +432,7 @@ h1 {
 }
 
 .motion-celebrate .turtle-card {
-  animation: turtle-card-hop 1.1s ease-in-out infinite alternate;
+  animation: turtle-card-hop 1.15s ease-in-out infinite alternate;
 }
 
 .motion-comfort .turtle-card {
@@ -422,7 +449,7 @@ h1 {
 }
 
 .motion-celebrate .turtle-speech {
-  animation: speech-cheer 1s ease-in-out infinite alternate;
+  animation: speech-cheer 1.15s ease-in-out infinite alternate;
 }
 
 .motion-comfort .turtle-speech,
@@ -436,7 +463,7 @@ h1 {
 }
 
 .motion-celebrate .turtle-badge {
-  animation: badge-pop 0.9s ease-in-out infinite alternate;
+  animation: badge-pop 1.05s ease-in-out infinite alternate;
 }
 
 .motion-comfort .turtle-badge,
@@ -450,7 +477,7 @@ h1 {
 }
 
 .motion-celebrate .turtle-orbit {
-  animation: orbit-happy 1.2s ease-in-out infinite alternate;
+  animation: orbit-happy 1.35s ease-in-out infinite alternate;
 }
 
 .motion-comfort .turtle-orbit,
@@ -480,10 +507,10 @@ h1 {
 
 @keyframes turtle-celebrate {
   0% {
-    transform: translateY(0) rotate(-3deg) scale(1);
+    transform: translateY(0) rotate(-1.4deg) scale(1);
   }
   100% {
-    transform: translateY(-10px) rotate(3deg) scale(1.04);
+    transform: translateY(-5px) rotate(1.4deg) scale(1.018);
   }
 }
 
@@ -530,7 +557,7 @@ h1 {
     transform: translateY(0) rotate(0deg) scale(1);
   }
   100% {
-    transform: translateY(-14px) rotate(12deg) scale(1.12);
+    transform: translateY(-8px) rotate(6deg) scale(1.06);
   }
 }
 
@@ -546,10 +573,10 @@ h1 {
 
 @keyframes turtle-card-hop {
   0% {
-    transform: translateY(0) rotate(-2deg);
+    transform: translateY(0) rotate(-1deg);
   }
   100% {
-    transform: translateY(-9px) rotate(2deg);
+    transform: translateY(-4px) rotate(1deg);
   }
 }
 
@@ -588,7 +615,7 @@ h1 {
     transform: translateY(0) scale(1);
   }
   100% {
-    transform: translateY(-4px) scale(1.015);
+    transform: translateY(-2px) scale(1.01);
   }
 }
 
@@ -607,7 +634,7 @@ h1 {
     transform: translateY(0) scale(1);
   }
   100% {
-    transform: translateY(-3px) scale(1.08);
+    transform: translateY(-2px) scale(1.03);
   }
 }
 

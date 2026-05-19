@@ -1,5 +1,22 @@
-const CACHE_NAME = "schildkroetenklasse-einmaleins-v4";
-const APP_SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
+const CACHE_NAME = "schildkroetenklasse-einmaleins-v5";
+const SCOPE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, "");
+
+function withBase(path = "") {
+  if (!SCOPE_PATH) {
+    return path ? `/${path}` : "/";
+  }
+
+  return path ? `${SCOPE_PATH}/${path}` : `${SCOPE_PATH}/`;
+}
+
+const APP_SHELL = [
+  withBase(),
+  withBase("index.html"),
+  withBase("manifest.webmanifest"),
+  withBase("icon.svg"),
+  withBase("icon-192.png"),
+  withBase("icon-512.png"),
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -32,7 +49,7 @@ self.addEventListener("fetch", (event) => {
         if (cachedResponse) return cachedResponse;
 
         if (event.request.mode === "navigate") {
-          return caches.match("/index.html");
+          return caches.match(withBase("index.html"));
         }
 
         return new Response("", { status: 504, statusText: "Offline" });

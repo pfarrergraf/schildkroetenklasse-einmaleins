@@ -54,6 +54,22 @@ Auf dem Smartphone:
 - iPhone: Safari öffnen → Teilen → Zum Home-Bildschirm hinzufügen
 - Android: Chrome öffnen → Menü → Zum Startbildschirm hinzufügen / App installieren
 
+## GitHub Pages
+
+Für GitHub Pages ist das Projekt auf den Unterpfad `/schildkroetenklasse-einmaleins/` vorbereitet.
+
+Die erwartete spätere Live-URL ist:
+
+```text
+https://<github-user>.github.io/schildkroetenklasse-einmaleins/
+```
+
+Neue Versionen sind später einfach:
+
+1. Änderungen committen
+2. nach `main` pushen
+3. GitHub Actions baut und veröffentlicht automatisch neu
+
 ## Hinweise zu Audio
 
 Die App versucht zuerst, eure eigenen Audiodateien aus `public/audio` abzuspielen. Nur wenn das nicht klappt, fällt sie auf die Browser-Sprachausgabe zurück.

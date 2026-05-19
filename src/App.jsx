@@ -4,6 +4,11 @@ import happyImage from "../assets/gut.png";
 import sadImage from "../assets/schlecht.png";
 import warningImage from "../assets/Achtung.png";
 
+const helloFrameModules = import.meta.glob("../assets/Hallo/*.png", { eager: true, import: "default" });
+const happyFrameModules = import.meta.glob("../assets/gut/*.png", { eager: true, import: "default" });
+const sadFrameModules = import.meta.glob("../assets/schlecht/*.png", { eager: true, import: "default" });
+const warningFrameModules = import.meta.glob("../assets/Achtung/*.png", { eager: true, import: "default" });
+
 const TABLES = Array.from({ length: 11 }, (_, i) => i);
 const ROUNDS_PER_GAME = 10;
 const STORAGE_KEY = "schildkroetenklasse-einmaleins-bestscore";
@@ -12,62 +17,166 @@ const START_TEXT = "Hallo Schildkrötenklasse! Ich bin Schildi und übe mit dir.
 const READY_TEXT = "Ich bin bereit für die nächste Aufgabe.";
 const FINISH_STRONG_TEXT = "Fertig! Das war schildkrötenstark.";
 const FINISH_SOFT_TEXT = "Fertig! Noch eine Runde und wir werden stärker.";
-const INPUT_WARNING_TEXT = "Bitte gib eine Zahl von 0 bis 100 ein.";
-const CORRECT_TEXTS = ["Ja, gut gemacht!", "Super gerechnet!", "Klasse, Samuel!", "Richtig! Schildkrötenstark!"];
+const INPUT_WARNING_TEXT = "Bitte eine Zahl von 0 bis 100 eingeben.";
 const WRONG_TEXT = "Probiere es noch einmal.";
-const AUDIO_FILES = {
-  [START_TEXT]: ["/audio/Hallo%20Schildkroetenklasse%20ich%20bin%20Schildi%20und%20uebe%20mit%20dir.wav"],
-  [READY_TEXT]: ["/audio/Ich%20bin%20bereit%20fuer%20die%20naechste%20Aufgabe.wav"],
-  [FINISH_STRONG_TEXT]: ["/audio/Fertig%20das%20war%20schildkroetenstark.mp3"],
-  [FINISH_SOFT_TEXT]: ["/audio/Fertig%20noch%20eine%20Runde%20und%20wir%20werden%20staerker.wav"],
-  [INPUT_WARNING_TEXT]: [
-    "/audio/Bitte%20eine%20Zahl%20von%200%20bis%20100%20eingeben.mp3",
-    "/audio/Bitte%20eine%20Zahl%20von%200%20bis%20100%20eingeben.wav",
-  ],
-  "Ja, gut gemacht!": ["/audio/Ja%20gut%20gemacht.wav"],
-  "Super gerechnet!": ["/audio/Super%20gerechnet.wav"],
-  "Klasse, Samuel!": ["/audio/Klasse%20Samuel.wav"],
-  "Richtig! Schildkrötenstark!": ["/audio/Richtig%20Schildkroetenstark.wav"],
-  [WRONG_TEXT]: ["/audio/Probier%20es%20noch%20einmal.wav"],
+const AUDIO_BASE_URL = `${import.meta.env.BASE_URL}audio/`;
+const LIP_SYNC_SILENCE_FLOOR = 0.02;
+const LIP_SYNC_FULL_OPEN = 0.16;
+const LIP_SYNC_SMOOTHING = 0.68;
+const FRAME_ALIGNMENT = {
+  "../assets/Hallo/ChatGPT Image May 19, 2026, 08_08_16 PM (1).png": { x: "-0.040%", y: "0.000%" },
+  "../assets/Hallo/ChatGPT Image May 19, 2026, 08_08_16 PM (2).png": { x: "-0.040%", y: "0.000%" },
+  "../assets/Hallo/ChatGPT Image May 19, 2026, 08_08_17 PM (3).png": { x: "0.040%", y: "0.000%" },
+  "../assets/Hallo/ChatGPT Image May 19, 2026, 08_08_17 PM (4).png": { x: "0.080%", y: "0.000%" },
+  "../assets/gut/ChatGPT Image May 19, 2026, 08_02_07 PM (1).png": { x: "-0.498%", y: "0.558%" },
+  "../assets/gut/ChatGPT Image May 19, 2026, 08_02_07 PM (2).png": { x: "0.020%", y: "-0.080%" },
+  "../assets/gut/ChatGPT Image May 19, 2026, 08_02_08 PM (3).png": { x: "0.020%", y: "0.000%" },
+  "../assets/gut/ChatGPT Image May 19, 2026, 08_02_08 PM (4).png": { x: "-0.020%", y: "0.000%" },
+  "../assets/schlecht/ChatGPT Image May 19, 2026, 08_02_08 PM (5).png": { x: "0.279%", y: "-0.159%" },
+  "../assets/schlecht/ChatGPT Image May 19, 2026, 08_02_09 PM (6).png": { x: "-0.279%", y: "0.000%" },
+  "../assets/schlecht/ChatGPT Image May 19, 2026, 08_02_09 PM (7).png": { x: "0.279%", y: "0.080%" },
+  "../assets/schlecht/ChatGPT Image May 19, 2026, 08_02_09 PM (8).png": { x: "-0.359%", y: "0.000%" },
+  "../assets/Achtung/ChatGPT Image May 19, 2026, 07_31_26 PM (1).png": { x: "0.080%", y: "-0.239%" },
+  "../assets/Achtung/ChatGPT Image May 19, 2026, 07_31_27 PM (2).png": { x: "0.399%", y: "0.239%" },
+  "../assets/Achtung/ChatGPT Image May 19, 2026, 07_31_27 PM (3).png": { x: "0.638%", y: "0.877%" },
+  "../assets/Achtung/ChatGPT Image May 19, 2026, 07_31_27 PM (4).png": { x: "-0.239%", y: "-0.558%" },
+  "../assets/Achtung/ChatGPT Image May 19, 2026, 07_31_28 PM (5).png": { x: "-0.159%", y: "-0.558%" },
+  "../assets/Achtung/ChatGPT Image May 19, 2026, 07_31_28 PM (6).png": { x: "-0.080%", y: "0.239%" },
 };
-const TURTLE_SCENES = {
+
+function loadFrames(frameModules, fallbackImage) {
+  const frames = Object.entries(frameModules)
+    .sort(([left], [right]) => left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" }))
+    .map(([sourcePath, src]) => ({
+      src,
+      shiftX: FRAME_ALIGNMENT[sourcePath]?.x ?? "0%",
+      shiftY: FRAME_ALIGNMENT[sourcePath]?.y ?? "0%",
+    }));
+
+  return frames.length > 0 ? frames : [{ src: fallbackImage, shiftX: "0%", shiftY: "0%" }];
+}
+
+const HELLO_FRAMES = loadFrames(helloFrameModules, halloImage);
+const HAPPY_FRAMES = loadFrames(happyFrameModules, happyImage);
+const SAD_FRAMES = loadFrames(sadFrameModules, sadImage);
+const WARNING_FRAMES = loadFrames(warningFrameModules, warningImage);
+
+const SCENES = {
   hello: {
-    image: halloImage,
+    frames: HELLO_FRAMES,
     badge: "Hallo",
     motion: "float",
     bubbleTone: "hello",
+    frameMs: 220,
   },
   idle: {
-    image: halloImage,
+    frames: HELLO_FRAMES,
     badge: "Bereit",
     motion: "breathe",
     bubbleTone: "hello",
+    frameMs: 240,
   },
   happy: {
-    image: happyImage,
+    frames: HAPPY_FRAMES,
     badge: "Super",
     motion: "celebrate",
     bubbleTone: "happy",
+    frameMs: 140,
   },
   sad: {
-    image: sadImage,
+    frames: SAD_FRAMES,
     badge: "Schade",
     motion: "comfort",
     bubbleTone: "sad",
+    frameMs: 170,
   },
   warning: {
-    image: warningImage,
+    frames: WARNING_FRAMES,
     badge: "Achtung",
     motion: "alert",
     bubbleTone: "warning",
+    frameMs: 150,
   },
   finish: {
-    image: happyImage,
+    frames: HAPPY_FRAMES,
     badge: "Geschafft",
     motion: "celebrate",
     bubbleTone: "happy",
+    frameMs: 150,
   },
 };
+
+const ALL_FRAME_SOURCES = Array.from(
+  new Set([...HELLO_FRAMES, ...HAPPY_FRAMES, ...SAD_FRAMES, ...WARNING_FRAMES].map((frame) => frame.src)),
+);
+
+const SPEECH_CUES = {
+  start: {
+    id: "start",
+    text: START_TEXT,
+    scene: "hello",
+    audioFiles: [`${AUDIO_BASE_URL}Hallo%20Schildkroetenklasse%20ich%20bin%20Schildi%20und%20uebe%20mit%20dir.wav`],
+  },
+  ready: {
+    id: "ready",
+    text: READY_TEXT,
+    scene: "idle",
+    audioFiles: [`${AUDIO_BASE_URL}Ich%20bin%20bereit%20fuer%20die%20naechste%20Aufgabe.wav`],
+  },
+  finishStrong: {
+    id: "finishStrong",
+    text: FINISH_STRONG_TEXT,
+    scene: "finish",
+    audioFiles: [`${AUDIO_BASE_URL}Fertig%20das%20war%20schildkroetenstark.mp3`],
+  },
+  finishSoft: {
+    id: "finishSoft",
+    text: FINISH_SOFT_TEXT,
+    scene: "finish",
+    audioFiles: [`${AUDIO_BASE_URL}Fertig%20noch%20eine%20Runde%20und%20wir%20werden%20staerker.wav`],
+  },
+  inputWarning: {
+    id: "inputWarning",
+    text: INPUT_WARNING_TEXT,
+    scene: "warning",
+    audioFiles: [
+      `${AUDIO_BASE_URL}Bitte%20eine%20Zahl%20von%200%20bis%20100%20eingeben.mp3`,
+      `${AUDIO_BASE_URL}Bitte%20eine%20Zahl%20von%200%20bis%20100%20eingeben.wav`,
+    ],
+  },
+  wrong: {
+    id: "wrong",
+    text: WRONG_TEXT,
+    scene: "sad",
+    audioFiles: [`${AUDIO_BASE_URL}Probier%20es%20noch%20einmal.wav`],
+  },
+  correctJa: {
+    id: "correctJa",
+    text: "Ja, gut gemacht!",
+    scene: "happy",
+    audioFiles: [`${AUDIO_BASE_URL}Ja%20gut%20gemacht.wav`],
+  },
+  correctSuper: {
+    id: "correctSuper",
+    text: "Super gerechnet!",
+    scene: "happy",
+    audioFiles: [`${AUDIO_BASE_URL}Super%20gerechnet.wav`],
+  },
+  correctKlasse: {
+    id: "correctKlasse",
+    text: "Klasse, Samuel!",
+    scene: "happy",
+    audioFiles: [`${AUDIO_BASE_URL}Klasse%20Samuel.wav`],
+  },
+  correctStrong: {
+    id: "correctStrong",
+    text: "Richtig! Schildkrötenstark!",
+    scene: "happy",
+    audioFiles: [`${AUDIO_BASE_URL}Richtig%20Schildkroetenstark.wav`],
+  },
+};
+
+const CORRECT_CUE_IDS = ["correctJa", "correctSuper", "correctKlasse", "correctStrong"];
 
 function createTask(selectedTables, previousTask) {
   const pool = selectedTables.length ? selectedTables : TABLES;
@@ -125,8 +234,96 @@ function encouragement(score, round) {
   return "Ganz ruhig. Schritt für Schritt wird das immer leichter.";
 }
 
-function randomPraise() {
-  return CORRECT_TEXTS[Math.floor(Math.random() * CORRECT_TEXTS.length)];
+function randomCorrectCueId() {
+  return CORRECT_CUE_IDS[Math.floor(Math.random() * CORRECT_CUE_IDS.length)];
+}
+
+function buildFrameSequence(frameCount) {
+  if (frameCount <= 1) {
+    return [0];
+  }
+
+  const forward = Array.from({ length: frameCount }, (_, index) => index);
+  const backward = Array.from({ length: Math.max(0, frameCount - 2) }, (_, index) => frameCount - 2 - index);
+
+  return [...forward, ...backward];
+}
+
+function mapLipSyncLevelToFrame(level, frameCount) {
+  if (frameCount <= 1) {
+    return 0;
+  }
+
+  const normalized = Math.max(0, Math.min(1, (level - LIP_SYNC_SILENCE_FLOOR) / (LIP_SYNC_FULL_OPEN - LIP_SYNC_SILENCE_FLOOR)));
+  const eased = normalized * normalized * (3 - 2 * normalized);
+
+  return Math.min(frameCount - 1, Math.round(eased * (frameCount - 1)));
+}
+
+function clamp01(value) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function analyzeAudioBufferForLipSync(audioBuffer) {
+  const channelCount = Math.max(1, audioBuffer.numberOfChannels);
+  const channels = Array.from({ length: channelCount }, (_, index) => audioBuffer.getChannelData(index));
+  const sampleRate = audioBuffer.sampleRate;
+  const samplesPerStep = Math.max(512, Math.round(sampleRate * 0.036));
+  const rawLevels = [];
+
+  for (let start = 0; start < audioBuffer.length; start += samplesPerStep) {
+    const end = Math.min(audioBuffer.length, start + samplesPerStep);
+    let sumSquares = 0;
+    let peak = 0;
+
+    for (let sampleIndex = start; sampleIndex < end; sampleIndex += 1) {
+      let sample = 0;
+
+      for (let channelIndex = 0; channelIndex < channelCount; channelIndex += 1) {
+        sample += channels[channelIndex][sampleIndex] || 0;
+      }
+
+      sample /= channelCount;
+
+      const absoluteSample = Math.abs(sample);
+      sumSquares += sample * sample;
+      if (absoluteSample > peak) {
+        peak = absoluteSample;
+      }
+    }
+
+    const sampleCount = Math.max(1, end - start);
+    const rms = Math.sqrt(sumSquares / sampleCount);
+    rawLevels.push(Math.max(rms * 2, peak * 0.95));
+  }
+
+  const sortedLevels = [...rawLevels].sort((left, right) => left - right);
+  const low = sortedLevels[Math.floor(sortedLevels.length * 0.15)] ?? 0;
+  const high = sortedLevels[Math.floor(sortedLevels.length * 0.9)] ?? 0.08;
+  const range = Math.max(0.0001, high - low);
+
+  return {
+    stepMs: (samplesPerStep / sampleRate) * 1000,
+    levels: rawLevels.map((level) => clamp01((level - low) / range)),
+  };
+}
+
+function toAbsoluteAudioUrl(url) {
+  return new URL(url, window.location.href).href;
+}
+
+function buildAudioBank() {
+  return new Map(
+    Object.values(SPEECH_CUES).map((cue) => {
+      const players = cue.audioFiles.map((url) => {
+        const player = new Audio(url);
+        player.preload = "auto";
+        player.load();
+        return player;
+      });
+      return [cue.id, players];
+    }),
+  );
 }
 
 export default function App() {
@@ -145,52 +342,376 @@ export default function App() {
   const [turtleSpeech, setTurtleSpeech] = useState(START_TEXT);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isChecking, setIsChecking] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [lastSpeechMode, setLastSpeechMode] = useState("none");
+  const [lastCueId, setLastCueId] = useState("start");
+  const [frameIndex, setFrameIndex] = useState(0);
   const inputRef = useRef(null);
   const answerTimerRef = useRef(null);
+  const frameTimerRef = useRef(null);
+  const frameStepRef = useRef(0);
+  const lipSyncRafRef = useRef(null);
+  const lipSyncLevelRef = useRef(0);
+  const lipSyncDriverRef = useRef("idle");
+  const audioContextRef = useRef(null);
+  const decodeAudioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const analyserDataRef = useRef(null);
+  const audioSourceMapRef = useRef(new WeakMap());
+  const lipTrackCacheRef = useRef(new Map());
   const audioRef = useRef(null);
   const audioBankRef = useRef(new Map());
+  const playbackCancelRef = useRef(null);
+  const flowTokenRef = useRef(0);
+  const startCueUnlockedRef = useRef(false);
+
+  const progressPercent = useMemo(() => Math.round((round / ROUNDS_PER_GAME) * 100), [round]);
+  const currentPraise = useMemo(() => encouragement(score, round), [score, round]);
+  const currentScene = SCENES[turtleScene] ?? SCENES.hello;
+  const currentFrame = currentScene.frames[frameIndex % currentScene.frames.length] ?? currentScene.frames[0];
+  const audioStatusText =
+    !soundEnabled
+      ? "Ton ausgeschaltet"
+      : lastSpeechMode === "audio-file"
+      ? "Eigene Aufnahme aktiv"
+      : lastSpeechMode === "missing-audio"
+        ? "Keine passende Audiodatei gefunden"
+        : lastCueId === "start"
+          ? "Tippe auf Schildi oder auf Nochmal hören"
+          : "Ton bereit";
+
+  function clearAnswerTimer() {
+    if (answerTimerRef.current) {
+      window.clearTimeout(answerTimerRef.current);
+      answerTimerRef.current = null;
+    }
+  }
+
+  function stopFrameLoop(resetFrame = false) {
+    if (frameTimerRef.current) {
+      window.clearInterval(frameTimerRef.current);
+      frameTimerRef.current = null;
+    }
+
+    if (lipSyncRafRef.current) {
+      window.cancelAnimationFrame(lipSyncRafRef.current);
+      lipSyncRafRef.current = null;
+    }
+
+    lipSyncLevelRef.current = 0;
+    lipSyncDriverRef.current = "idle";
+
+    if (resetFrame) {
+      frameStepRef.current = 0;
+      setFrameIndex(0);
+    }
+  }
+
+  async function ensureAudioAnalyser(player) {
+    const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextConstructor || !player) {
+      return null;
+    }
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContextConstructor();
+    }
+
+    const context = audioContextRef.current;
+
+    if (context.state === "suspended") {
+      try {
+        await context.resume();
+      } catch {
+        return null;
+      }
+    }
+
+    if (!analyserRef.current) {
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0.18;
+      analyser.connect(context.destination);
+      analyserRef.current = analyser;
+      analyserDataRef.current = new Uint8Array(analyser.fftSize);
+    }
+
+    let source = audioSourceMapRef.current.get(player);
+    if (!source) {
+      try {
+        source = context.createMediaElementSource(player);
+        source.connect(analyserRef.current);
+        audioSourceMapRef.current.set(player, source);
+      } catch {
+        return null;
+      }
+    }
+
+    return analyserRef.current;
+  }
+
+  function getDecodeAudioContext() {
+    const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextConstructor) {
+      return null;
+    }
+
+    if (!decodeAudioContextRef.current) {
+      decodeAudioContextRef.current = new AudioContextConstructor();
+    }
+
+    return decodeAudioContextRef.current;
+  }
+
+  function getLipSyncTrack(url) {
+    if (!url) {
+      return Promise.resolve(null);
+    }
+
+    const resolvedUrl = toAbsoluteAudioUrl(url);
+
+    const cached = lipTrackCacheRef.current.get(resolvedUrl);
+    if (cached) {
+      return cached;
+    }
+
+    const trackPromise = (async () => {
+      const context = getDecodeAudioContext();
+      if (!context) {
+        return null;
+      }
+
+      try {
+        const response = await fetch(resolvedUrl);
+        if (!response.ok) {
+          return null;
+        }
+        const audioBuffer = await response.arrayBuffer();
+        const decodedBuffer = await context.decodeAudioData(audioBuffer.slice(0));
+        return analyzeAudioBufferForLipSync(decodedBuffer);
+      } catch {
+        return null;
+      }
+    })();
+
+    const resilientPromise = trackPromise.then((result) => {
+      if (!result) {
+        lipTrackCacheRef.current.delete(resolvedUrl);
+      }
+      return result;
+    });
+
+    lipTrackCacheRef.current.set(resolvedUrl, resilientPromise);
+    return resilientPromise;
+  }
+
+  function stopCurrentAudio() {
+    stopFrameLoop(true);
+
+    if (playbackCancelRef.current) {
+      playbackCancelRef.current("interrupted");
+      playbackCancelRef.current = null;
+    }
+
+    if (audioRef.current) {
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
+    setIsSpeaking(false);
+  }
+
+  function sleep(ms) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+  }
 
   useEffect(() => {
     const stored = Number(window.localStorage.getItem(STORAGE_KEY) || 0);
     if (Number.isFinite(stored)) setBestScore(stored);
 
-    audioBankRef.current = new Map(
-      Object.entries(AUDIO_FILES).map(([text, files]) => {
-        const players = files.map((url) => {
-          const player = new Audio(url);
-          player.preload = "auto";
-          player.load();
-          return player;
-        });
-        return [text, players];
-      })
-    );
-
+    audioBankRef.current = buildAudioBank();
     window.setTimeout(() => inputRef.current?.focus(), 120);
 
+    ALL_FRAME_SOURCES.forEach((src) => {
+      const image = new window.Image();
+      image.decoding = "async";
+      image.src = src;
+      image.decode?.().catch(() => {});
+    });
+
     return () => {
-      if (answerTimerRef.current) window.clearTimeout(answerTimerRef.current);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
-      }
+      clearAnswerTimer();
+      stopFrameLoop();
+      stopCurrentAudio();
       audioBankRef.current.forEach((players) => {
         players.forEach((player) => {
           player.pause();
           player.src = "";
         });
       });
+      if (audioContextRef.current?.close) {
+        audioContextRef.current.close().catch(() => {});
+      }
+      if (decodeAudioContextRef.current?.close) {
+        decodeAudioContextRef.current.close().catch(() => {});
+      }
       window.speechSynthesis?.cancel();
     };
   }, []);
 
   useEffect(() => {
-    if (!soundEnabled && audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+    setFrameIndex(0);
+    frameStepRef.current = 0;
+    stopFrameLoop();
+
+    if (!isSpeaking || currentScene.frames.length <= 1) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function startAudioDrivenLipSync() {
+      if (lastSpeechMode !== "audio-file" || !audioRef.current) {
+        return false;
+      }
+
+      const currentPlayer = audioRef.current;
+      const lipTrack = await getLipSyncTrack(currentPlayer.currentSrc || currentPlayer.src);
+      if (lipTrack?.levels?.length && !cancelled) {
+        lipSyncDriverRef.current = `track:${lipTrack.levels.length}`;
+        const tickTrack = () => {
+          if (cancelled) {
+            return;
+          }
+
+          if (!audioRef.current || audioRef.current !== currentPlayer || currentPlayer.paused || currentPlayer.ended) {
+            lipSyncLevelRef.current = 0;
+            setFrameIndex(0);
+            return;
+          }
+
+          const sampleIndex = Math.min(
+            lipTrack.levels.length - 1,
+            Math.max(0, Math.floor((currentPlayer.currentTime * 1000) / lipTrack.stepMs)),
+          );
+          const normalizedLevel = lipTrack.levels[sampleIndex] ?? 0;
+          const rawLevel =
+            LIP_SYNC_SILENCE_FLOOR + normalizedLevel * (LIP_SYNC_FULL_OPEN - LIP_SYNC_SILENCE_FLOOR);
+          const smoothedLevel =
+            lipSyncLevelRef.current * LIP_SYNC_SMOOTHING + rawLevel * (1 - LIP_SYNC_SMOOTHING);
+          lipSyncLevelRef.current = smoothedLevel;
+
+          const targetFrame = mapLipSyncLevelToFrame(smoothedLevel, currentScene.frames.length);
+          setFrameIndex((current) => (current === targetFrame ? current : targetFrame));
+          lipSyncRafRef.current = window.requestAnimationFrame(tickTrack);
+        };
+
+        tickTrack();
+        return true;
+      }
+
+      const analyser = await ensureAudioAnalyser(currentPlayer);
+      const data = analyserDataRef.current;
+      if (!analyser || !data || cancelled) {
+        return false;
+      }
+
+      lipSyncDriverRef.current = "analyser";
+      const tick = () => {
+        if (cancelled) {
+          return;
+        }
+
+        if (!audioRef.current || audioRef.current !== currentPlayer || currentPlayer.paused || currentPlayer.ended) {
+          lipSyncLevelRef.current = 0;
+          setFrameIndex(0);
+          return;
+        }
+
+        analyser.getByteTimeDomainData(data);
+
+        let sumSquares = 0;
+        let peak = 0;
+
+        for (let index = 0; index < data.length; index += 1) {
+          const sample = (data[index] - 128) / 128;
+          const absoluteSample = Math.abs(sample);
+          sumSquares += sample * sample;
+          if (absoluteSample > peak) {
+            peak = absoluteSample;
+          }
+        }
+
+        const rms = Math.sqrt(sumSquares / data.length);
+        const rawLevel = Math.max(rms * 1.9, peak * 0.95);
+        const smoothedLevel =
+          lipSyncLevelRef.current * LIP_SYNC_SMOOTHING + rawLevel * (1 - LIP_SYNC_SMOOTHING);
+        lipSyncLevelRef.current = smoothedLevel;
+
+        const targetFrame = mapLipSyncLevelToFrame(smoothedLevel, currentScene.frames.length);
+        setFrameIndex((current) => (current === targetFrame ? current : targetFrame));
+        lipSyncRafRef.current = window.requestAnimationFrame(tick);
+      };
+
+      tick();
+      return true;
+    }
+
+    void startAudioDrivenLipSync().then((started) => {
+      if (started || cancelled) {
+        return;
+      }
+
+      lipSyncDriverRef.current = "fallback";
+      const frameSequence = buildFrameSequence(currentScene.frames.length);
+      frameTimerRef.current = window.setInterval(() => {
+        frameStepRef.current = (frameStepRef.current + 1) % frameSequence.length;
+        setFrameIndex(frameSequence[frameStepRef.current]);
+      }, currentScene.frameMs);
+    });
+
+    return () => {
+      cancelled = true;
+      stopFrameLoop();
+    };
+  }, [currentScene.frameMs, currentScene.frames.length, isSpeaking, lastSpeechMode, turtleScene]);
+
+  useEffect(() => {
+    if (!soundEnabled) {
+      stopCurrentAudio();
+      setLastSpeechMode("sound-off");
     }
   }, [soundEnabled]);
+
+  useEffect(() => {
+    function unlockStartCue(event) {
+      if (startCueUnlockedRef.current) return;
+
+      const target = event.target instanceof Element ? event.target : null;
+      const ignoredInteractive =
+        target?.closest(".answer-grid, .answer-form, .table-grid, .top-actions button, .sound-button, .secondary-button, .submit-button");
+
+      if (ignoredInteractive) {
+        return;
+      }
+
+      startCueUnlockedRef.current = true;
+
+      if (round === 0 && score === 0 && !gameFinished && lastCueId === "start") {
+        void playCue("start");
+      }
+    }
+
+    window.addEventListener("pointerdown", unlockStartCue, true);
+    window.addEventListener("keydown", unlockStartCue, true);
+
+    return () => {
+      window.removeEventListener("pointerdown", unlockStartCue, true);
+      window.removeEventListener("keydown", unlockStartCue, true);
+    };
+  }, [gameFinished, lastCueId, round, score]);
 
   useEffect(() => {
     window.render_game_to_text = () =>
@@ -205,53 +726,113 @@ export default function App() {
         score,
         streak,
         scene: turtleScene,
+        sceneFrameIndex: frameIndex,
+        sceneFrameCount: currentScene.frames.length,
         speech: turtleSpeech,
         feedback,
         soundEnabled,
         selectedTables,
         checking: isChecking,
+        speaking: isSpeaking,
         lastSpeechMode,
+        lastCueId,
+        lipSyncLevel: Number(lipSyncLevelRef.current.toFixed(3)),
+        lipSyncDriver: lipSyncDriverRef.current,
+        audioCurrentTime: Number((audioRef.current?.currentTime || 0).toFixed(3)),
       });
 
     return () => {
       delete window.render_game_to_text;
     };
-  }, [feedback, gameFinished, isChecking, lastSpeechMode, round, score, selectedTables, soundEnabled, streak, task, turtleScene, turtleSpeech, typedAnswer]);
+  }, [
+    currentScene.frames.length,
+    feedback,
+    frameIndex,
+    gameFinished,
+    isChecking,
+    isSpeaking,
+    lastCueId,
+    lastSpeechMode,
+    round,
+    score,
+    selectedTables,
+    soundEnabled,
+    streak,
+    task,
+    turtleScene,
+    turtleSpeech,
+    typedAnswer,
+  ]);
 
-  const progressPercent = useMemo(() => Math.round((round / ROUNDS_PER_GAME) * 100), [round]);
-  const currentPraise = useMemo(() => encouragement(score, round), [score, round]);
-  const currentScene = TURTLE_SCENES[turtleScene] ?? TURTLE_SCENES.hello;
-  const audioStatusText =
-    lastSpeechMode === "audio-file"
-      ? "Eigene Aufnahme aktiv"
-      : lastSpeechMode === "missing-audio"
-        ? "Keine passende Audiodatei gefunden"
-        : soundEnabled
-          ? "Ton bereit"
-          : "Ton ausgeschaltet";
+  async function playCue(cueId) {
+    const cue = SPEECH_CUES[cueId];
+    if (!cue) return;
 
-  async function speak(text) {
-    if (!soundEnabled) return;
+    setLastCueId(cueId);
+    setTurtleScene(cue.scene);
+    setTurtleSpeech(cue.text);
+    setFrameIndex(0);
+    frameStepRef.current = 0;
 
-    const players = audioBankRef.current.get(text) ?? [];
+    if (!soundEnabled) {
+      setIsSpeaking(false);
+      setLastSpeechMode("sound-off");
+      return;
+    }
+
+    const players = audioBankRef.current.get(cue.id) ?? [];
     for (const player of players) {
       try {
-        if (audioRef.current && audioRef.current !== player) {
-          audioRef.current.pause();
-          audioRef.current.currentTime = 0;
+        stopCurrentAudio();
+        audioRef.current = player;
+        player.currentTime = 0;
+
+        const playbackResult = await new Promise((resolve) => {
+          let settled = false;
+
+          const finish = (status) => {
+            if (settled) return;
+            settled = true;
+            player.onended = null;
+            player.onerror = null;
+            if (playbackCancelRef.current === cancelPlayback) {
+              playbackCancelRef.current = null;
+            }
+            setIsSpeaking(false);
+            resolve(status);
+          };
+
+          const cancelPlayback = (status = "interrupted") => finish(status);
+          playbackCancelRef.current = cancelPlayback;
+          player.onended = () => finish("ended");
+          player.onerror = () => finish("error");
+
+          try {
+            const playPromise = player.play();
+            setIsSpeaking(true);
+            setLastSpeechMode("audio-file");
+            if (playPromise && typeof playPromise.then === "function") {
+              playPromise.catch(() => finish("error"));
+            }
+          } catch {
+            finish("error");
+          }
+        });
+
+        if (playbackResult === "ended") {
+          return;
         }
 
-        audioRef.current = player;
-        player.pause();
-        player.currentTime = 0;
-        await player.play();
-        setLastSpeechMode("audio-file");
-        return;
+        if (playbackResult === "interrupted") {
+          return;
+        }
       } catch {
         player.pause();
         player.currentTime = 0;
       }
     }
+
+    setIsSpeaking(false);
     setLastSpeechMode("missing-audio");
   }
 
@@ -283,77 +864,108 @@ export default function App() {
   }
 
   function nextTask() {
+    flowTokenRef.current += 1;
     const next = createTask(selectedTables, task);
     setTask(next);
     setOptions(createOptions(next.answer));
     setTypedAnswer("");
     setLastWasCorrect(null);
-    setIsChecking(false);
-    setTurtleScene("idle");
-    setTurtleSpeech(READY_TEXT);
     setFeedback("Nächste Aufgabe. Wähle eine Antwort oder tippe die Zahl ein.");
-    window.setTimeout(() => inputRef.current?.focus(), 60);
   }
 
-  function finishGame(finalScore) {
+  async function finishGame(finalScore, flowToken) {
     const strongFinish = finalScore >= 7;
 
-    setIsChecking(false);
     setGameFinished(true);
-    setTurtleScene(strongFinish ? "finish" : "idle");
-    setTurtleSpeech(strongFinish ? FINISH_STRONG_TEXT : FINISH_SOFT_TEXT);
     setFeedback(`Fertig! Du hast ${finalScore} von ${ROUNDS_PER_GAME} Aufgaben richtig gelöst.`);
 
     if (finalScore > bestScore) {
       setBestScore(finalScore);
       window.localStorage.setItem(STORAGE_KEY, String(finalScore));
     }
+
+    await playCue(strongFinish ? "finishStrong" : "finishSoft");
+
+    if (flowTokenRef.current !== flowToken) {
+      return;
+    }
+
+    setIsChecking(false);
   }
 
-  function checkAnswer(answer) {
+  async function checkAnswer(answer) {
     if (gameFinished || isChecking) return;
 
     const number = cleanAnswer(answer);
     if (number === null) {
       setFeedback("Bitte gib nur ganze Zahlen zwischen 0 und 100 ein.");
       setLastWasCorrect(false);
-      setTurtleScene("warning");
-      setTurtleSpeech(INPUT_WARNING_TEXT);
-      speak(INPUT_WARNING_TEXT);
+      await playCue("inputWarning");
       window.setTimeout(() => inputRef.current?.focus(), 30);
       return;
     }
 
+    const flowToken = flowTokenRef.current + 1;
+    flowTokenRef.current = flowToken;
     const isCorrect = number === task.answer;
     const nextRound = round + 1;
     const nextScore = score + (isCorrect ? 1 : 0);
-    const turtleMessage = isCorrect ? randomPraise() : WRONG_TEXT;
+    const cueId = isCorrect ? randomCorrectCueId() : "wrong";
 
     setIsChecking(true);
     setRound(nextRound);
     setScore(nextScore);
     setStreak(isCorrect ? streak + 1 : 0);
     setLastWasCorrect(isCorrect);
-    setTurtleScene(isCorrect ? "happy" : "sad");
-    setTurtleSpeech(turtleMessage);
     setFeedback(
       isCorrect
         ? "Richtig gerechnet. Schildi freut sich mit dir."
         : `Noch einmal hinschauen: ${task.a} × ${task.b} = ${task.answer}.`
     );
-    speak(turtleMessage);
+    await playCue(cueId);
 
-    if (nextRound >= ROUNDS_PER_GAME) {
-      answerTimerRef.current = window.setTimeout(() => finishGame(nextScore), 1200);
+    if (flowTokenRef.current !== flowToken) {
       return;
     }
 
-    if (answerTimerRef.current) window.clearTimeout(answerTimerRef.current);
-    answerTimerRef.current = window.setTimeout(nextTask, 1500);
+    if (nextRound >= ROUNDS_PER_GAME) {
+      clearAnswerTimer();
+      await sleep(100);
+
+      if (flowTokenRef.current !== flowToken) {
+        return;
+      }
+
+      await finishGame(nextScore, flowToken);
+      return;
+    }
+
+    await sleep(100);
+
+    if (flowTokenRef.current !== flowToken) {
+      return;
+    }
+
+    const next = createTask(selectedTables, task);
+    setTask(next);
+    setOptions(createOptions(next.answer));
+    setTypedAnswer("");
+    setLastWasCorrect(null);
+    setFeedback("Nächste Aufgabe. Wähle eine Antwort oder tippe die Zahl ein.");
+    await playCue("ready");
+
+    if (flowTokenRef.current !== flowToken) {
+      return;
+    }
+
+    setIsChecking(false);
+    window.setTimeout(() => inputRef.current?.focus(), 60);
   }
 
   function resetGame() {
-    if (answerTimerRef.current) window.clearTimeout(answerTimerRef.current);
+    flowTokenRef.current += 1;
+    clearAnswerTimer();
+    stopCurrentAudio();
     window.speechSynthesis?.cancel();
 
     const firstTask = createTask(selectedTables);
@@ -367,9 +979,21 @@ export default function App() {
     setLastWasCorrect(null);
     setGameFinished(false);
     setIsChecking(false);
+    setIsSpeaking(false);
+    setLastSpeechMode(soundEnabled ? "none" : "sound-off");
+    setLastCueId("start");
     setTurtleScene("hello");
     setTurtleSpeech(START_TEXT);
+    setFrameIndex(0);
+    frameStepRef.current = 0;
     window.setTimeout(() => inputRef.current?.focus(), 80);
+  }
+
+  function replayCurrentCue() {
+    if (lastCueId === "start") {
+      startCueUnlockedRef.current = true;
+    }
+    void playCue(lastCueId);
   }
 
   function handleOptionClick(option) {
@@ -417,6 +1041,7 @@ export default function App() {
                 >
                   {soundEnabled ? "Ton an" : "Ton aus"}
                 </button>
+                <button type="button" onClick={replayCurrentCue} className="secondary-button">Nochmal hören</button>
                 <button type="button" onClick={resetGame} className="secondary-button">Neu starten</button>
                 <button type="button" onClick={resetAppCache} className="secondary-button">Cache zurücksetzen</button>
               </div>
@@ -431,6 +1056,13 @@ export default function App() {
               aria-label="Schildkröten-Maskottchen Schildi"
               data-testid="turtle-panel"
               data-scene={turtleScene}
+              data-cue={lastCueId}
+              onClick={() => {
+                if (lastCueId === "start" || !isSpeaking) {
+                  startCueUnlockedRef.current = true;
+                  void playCue(lastCueId);
+                }
+              }}
             >
               <div className={`turtle-speech bubble-${currentScene.bubbleTone}`} aria-live="polite">
                 {turtleSpeech}
@@ -441,7 +1073,23 @@ export default function App() {
                 <div className="turtle-orbit turtle-orbit-left" />
                 <div className="turtle-orbit turtle-orbit-right" />
                 <div className="turtle-card">
-                  <img className="turtle-image" src={currentScene.image} alt="" />
+                  <div className="turtle-frame-stack">
+                    <div
+                      className="turtle-frame-align"
+                      style={{
+                        "--frame-shift-x": currentFrame?.shiftX ?? "0%",
+                        "--frame-shift-y": currentFrame?.shiftY ?? "0%",
+                      }}
+                    >
+                      <img
+                        className="turtle-image turtle-image-current"
+                        src={currentFrame?.src}
+                        alt=""
+                        data-testid="turtle-image"
+                        data-frame-index={frameIndex}
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="turtle-badge">{currentScene.badge}</div>
               </div>

@@ -5,6 +5,7 @@ import "./styles.css";
 
 const DEV_CACHE_RESET_KEY = "schildi-dev-cache-reset-v2";
 const CACHE_PREFIX = "schildkroetenklasse-einmaleins";
+const APP_BASE_URL = import.meta.env.BASE_URL;
 
 async function clearSchildiBrowserState() {
   let changed = false;
@@ -51,7 +52,7 @@ window.addEventListener("load", async () => {
   }
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js").catch((error) => {
+    navigator.serviceWorker.register(`${APP_BASE_URL}sw.js`, { scope: APP_BASE_URL }).catch((error) => {
       console.info("Service Worker konnte nicht registriert werden:", error);
     });
   }
