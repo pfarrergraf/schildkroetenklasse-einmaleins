@@ -1,0 +1,1 @@
+Diese Platzhalterdatei kann durch `Bitte eine Zahl von 0 bis 100 eingeben.mp3` oder `...wav` ersetzt werden.

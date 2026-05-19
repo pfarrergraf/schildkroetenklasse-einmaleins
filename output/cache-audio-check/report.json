@@ -1,0 +1,27 @@
+{
+  "registrations": 0,
+  "cachesList": [],
+  "state": {
+    "mode": "play",
+    "coordinate_system": "UI layout only, no canvas. Top-to-bottom reading order.",
+    "task": "2 x 7",
+    "answer": 14,
+    "typedAnswer": "",
+    "round": 0,
+    "totalRounds": 10,
+    "score": 0,
+    "streak": 0,
+    "scene": "warning",
+    "speech": "Bitte gib eine Zahl von 0 bis 100 ein.",
+    "feedback": "Bitte gib nur ganze Zahlen zwischen 0 und 100 ein.",
+    "soundEnabled": true,
+    "selectedTables": [
+      1,
+      2,
+      5,
+      10
+    ],
+    "checking": false,
+    "lastSpeechMode": "audio-file"
+  }
+}

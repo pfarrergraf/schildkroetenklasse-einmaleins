@@ -1,0 +1,118 @@
+{
+  "initial": {
+    "mode": "play",
+    "coordinate_system": "UI layout only, no canvas. Top-to-bottom reading order.",
+    "task": "5 x 5",
+    "answer": 25,
+    "typedAnswer": "",
+    "round": 0,
+    "totalRounds": 10,
+    "score": 0,
+    "streak": 0,
+    "scene": "hello",
+    "speech": "Hallo Schildkrötenklasse! Ich bin Schildi und übe mit dir.",
+    "feedback": "Wähle eine Antwort oder tippe die Zahl ein.",
+    "soundEnabled": true,
+    "selectedTables": [
+      1,
+      2,
+      5,
+      10
+    ],
+    "checking": false,
+    "lastSpeechMode": "none"
+  },
+  "warning": {
+    "mode": "play",
+    "coordinate_system": "UI layout only, no canvas. Top-to-bottom reading order.",
+    "task": "5 x 5",
+    "answer": 25,
+    "typedAnswer": "",
+    "round": 0,
+    "totalRounds": 10,
+    "score": 0,
+    "streak": 0,
+    "scene": "warning",
+    "speech": "Bitte gib eine Zahl von 0 bis 100 ein.",
+    "feedback": "Bitte gib nur ganze Zahlen zwischen 0 und 100 ein.",
+    "soundEnabled": true,
+    "selectedTables": [
+      1,
+      2,
+      5,
+      10
+    ],
+    "checking": false,
+    "lastSpeechMode": "audio-file"
+  },
+  "correct": {
+    "mode": "play",
+    "coordinate_system": "UI layout only, no canvas. Top-to-bottom reading order.",
+    "task": "5 x 5",
+    "answer": 25,
+    "typedAnswer": "25",
+    "round": 1,
+    "totalRounds": 10,
+    "score": 1,
+    "streak": 1,
+    "scene": "happy",
+    "speech": "Klasse, Samuel!",
+    "feedback": "Richtig gerechnet. Schildi freut sich mit dir.",
+    "soundEnabled": true,
+    "selectedTables": [
+      1,
+      2,
+      5,
+      10
+    ],
+    "checking": true,
+    "lastSpeechMode": "audio-file"
+  },
+  "nextTask": {
+    "mode": "play",
+    "coordinate_system": "UI layout only, no canvas. Top-to-bottom reading order.",
+    "task": "10 x 7",
+    "answer": 70,
+    "typedAnswer": "",
+    "round": 1,
+    "totalRounds": 10,
+    "score": 1,
+    "streak": 1,
+    "scene": "idle",
+    "speech": "Ich bin bereit für die nächste Aufgabe.",
+    "feedback": "Nächste Aufgabe. Wähle eine Antwort oder tippe die Zahl ein.",
+    "soundEnabled": true,
+    "selectedTables": [
+      1,
+      2,
+      5,
+      10
+    ],
+    "checking": false,
+    "lastSpeechMode": "audio-file"
+  },
+  "wrong": {
+    "mode": "play",
+    "coordinate_system": "UI layout only, no canvas. Top-to-bottom reading order.",
+    "task": "10 x 7",
+    "answer": 70,
+    "typedAnswer": "71",
+    "round": 2,
+    "totalRounds": 10,
+    "score": 1,
+    "streak": 0,
+    "scene": "sad",
+    "speech": "Probiere es noch einmal.",
+    "feedback": "Noch einmal hinschauen: 10 × 7 = 70.",
+    "soundEnabled": true,
+    "selectedTables": [
+      1,
+      2,
+      5,
+      10
+    ],
+    "checking": true,
+    "lastSpeechMode": "audio-file"
+  },
+  "consoleErrors": []
+}
