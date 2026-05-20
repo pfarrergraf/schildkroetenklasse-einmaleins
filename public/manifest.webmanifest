@@ -1,7 +1,7 @@
 {
   "name": "Schildkrötenklasse Einmaleins",
   "short_name": "Schildi 1x1",
-  "description": "Ein kindgerechtes Einmaleins-Spiel für die Schildkrötenklasse mit sprechender Schildkröte.",
+  "description": "Ein Einmaleins-Spiel für die Schildkrötenklasse mit sprechender Schildkröte.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
