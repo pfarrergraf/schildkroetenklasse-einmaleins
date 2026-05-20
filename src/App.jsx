@@ -973,20 +973,32 @@ export default function App() {
     const flowToken = flowTokenRef.current + 1;
     flowTokenRef.current = flowToken;
     const isCorrect = number === task.answer;
-    const nextRound = round + 1;
-    const nextScore = score + (isCorrect ? 1 : 0);
     const cueId = isCorrect ? randomCorrectCueId() : "wrong";
 
     setIsChecking(true);
+    setLastWasCorrect(isCorrect);
+
+    if (!isCorrect) {
+      setStreak(0);
+      setTypedAnswer("");
+      setFeedback(WRONG_TEXT);
+      await playCue(cueId);
+
+      if (flowTokenRef.current !== flowToken) {
+        return;
+      }
+
+      setIsChecking(false);
+      return;
+    }
+
+    const nextRound = round + 1;
+    const nextScore = score + 1;
+
     setRound(nextRound);
     setScore(nextScore);
-    setStreak(isCorrect ? streak + 1 : 0);
-    setLastWasCorrect(isCorrect);
-    setFeedback(
-      isCorrect
-        ? "Richtig gerechnet. Schildi freut sich mit dir."
-        : `Noch einmal hinschauen: ${task.a} × ${task.b} = ${task.answer}.`
-    );
+    setStreak(streak + 1);
+    setFeedback("Richtig gerechnet. Schildi freut sich mit dir.");
     await playCue(cueId);
 
     if (flowTokenRef.current !== flowToken) {
@@ -1017,13 +1029,12 @@ export default function App() {
     setTypedAnswer("");
     setLastWasCorrect(null);
     setFeedback("Nächste Aufgabe. Wähle eine Antwort oder tippe die Zahl ein.");
+    setIsChecking(false);
     await playCue("ready");
 
     if (flowTokenRef.current !== flowToken) {
       return;
     }
-
-    setIsChecking(false);
   }
 
   function resetGame() {
