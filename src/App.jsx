@@ -1545,6 +1545,15 @@ export default function App() {
     setCollectionOpen(true);
   }
 
+  function handleCollectionRewardOpen(reward) {
+    if (!reward?.videoPath) {
+      return;
+    }
+
+    setCollectionOpen(false);
+    setVideoReward(reward);
+  }
+
   function openPendingRewardOffer() {
     if (pendingRewardOffer?.choices?.length) {
       setRewardModalOpen(true);
@@ -2007,6 +2016,7 @@ export default function App() {
               unlockedIds={unlockedRewardIds}
               bonusStars={bonusStars}
               onClose={() => setCollectionOpen(false)}
+              onOpenRewardVideo={handleCollectionRewardOpen}
               soundEnabled={soundEnabled}
             />
           </div>

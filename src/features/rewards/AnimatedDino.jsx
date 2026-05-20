@@ -7,6 +7,7 @@ export default function AnimatedDino({
   celebrate = false,
   soundEnabled = true,
   active = true,
+  showSoundButton = true,
   onSoundPlayed,
 }) {
   if (!reward) return null;
@@ -32,9 +33,11 @@ export default function AnimatedDino({
           draggable="false"
         />
       )}
-      <button type="button" className="dino-sound-button" onClick={handleSoundClick} aria-label={`Dino-Sound von ${reward.name} abspielen`}>
-        Dino-Sound
-      </button>
+      {showSoundButton ? (
+        <button type="button" className="dino-sound-button" onClick={handleSoundClick} aria-label={`Dino-Sound von ${reward.name} abspielen`}>
+          Dino-Sound
+        </button>
+      ) : null}
     </div>
   );
 }

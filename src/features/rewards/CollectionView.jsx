@@ -2,7 +2,7 @@ import { DINO_REWARDS } from "./rewardCatalog";
 import { getCollectionProgress } from "./rewardLogic";
 import AnimatedDino from "./AnimatedDino";
 
-export default function CollectionView({ unlockedIds, bonusStars = 0, onClose, soundEnabled = true }) {
+export default function CollectionView({ unlockedIds, bonusStars = 0, onClose, onOpenRewardVideo, soundEnabled = true }) {
   const unlocked = new Set(unlockedIds);
   const progress = getCollectionProgress(unlockedIds);
 
@@ -25,14 +25,31 @@ export default function CollectionView({ unlockedIds, bonusStars = 0, onClose, s
         {DINO_REWARDS.map((reward) => {
           const isUnlocked = unlocked.has(reward.id);
           return (
-            <article key={reward.id} className={isUnlocked ? "collection-card unlocked" : "collection-card locked"}>
+            <article
+              key={reward.id}
+              className={isUnlocked ? "collection-card unlocked collection-card-clickable" : "collection-card locked"}
+              onClick={isUnlocked ? () => onOpenRewardVideo?.(reward) : undefined}
+              onKeyDown={
+                isUnlocked
+                  ? (event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onOpenRewardVideo?.(reward);
+                      }
+                    }
+                  : undefined
+              }
+              role={isUnlocked ? "button" : undefined}
+              tabIndex={isUnlocked ? 0 : undefined}
+            >
               {isUnlocked ? (
-                <AnimatedDino reward={reward} size="collection" soundEnabled={soundEnabled} active={false} />
+                <AnimatedDino reward={reward} size="collection" soundEnabled={soundEnabled} active={false} showSoundButton={false} />
               ) : (
                 <div className="dino-silhouette" aria-hidden="true">?</div>
               )}
               <strong>{isUnlocked ? reward.name : "Noch geheim"}</strong>
               <span>{isUnlocked ? reward.species : "Schaffe 10 von 10"}</span>
+              {isUnlocked ? <small>Tippe auf den Dino fuer das Video</small> : null}
             </article>
           );
         })}
