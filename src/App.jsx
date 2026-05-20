@@ -106,8 +106,8 @@ const SCENES = {
   },
 };
 
-const ALL_FRAME_SOURCES = Array.from(
-  new Set([...HELLO_FRAMES, ...HAPPY_FRAMES, ...SAD_FRAMES, ...WARNING_FRAMES].map((frame) => frame.src)),
+const FRAME_WARMUP_SOURCES = Array.from(
+  new Set([HELLO_FRAMES[0]?.src, HAPPY_FRAMES[0]?.src, SAD_FRAMES[0]?.src, WARNING_FRAMES[0]?.src].filter(Boolean)),
 );
 
 const SPEECH_CUES = {
@@ -312,18 +312,47 @@ function toAbsoluteAudioUrl(url) {
   return new URL(url, window.location.href).href;
 }
 
+function createAudioPlayers(cue) {
+  return cue.audioFiles.map((url) => {
+    const player = new Audio();
+    player.preload = "metadata";
+    player.src = url;
+    return player;
+  });
+}
+
 function buildAudioBank() {
-  return new Map(
-    Object.values(SPEECH_CUES).map((cue) => {
-      const players = cue.audioFiles.map((url) => {
-        const player = new Audio(url);
-        player.preload = "auto";
-        player.load();
-        return player;
-      });
-      return [cue.id, players];
-    }),
-  );
+  return new Map();
+}
+
+function shouldWarmHeavyMedia() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const connection = navigator.connection;
+  const smallScreen = window.matchMedia("(max-width: 860px)").matches;
+  const saveData = connection?.saveData;
+  const slowConnection = ["slow-2g", "2g", "3g"].includes(connection?.effectiveType);
+
+  return !smallScreen && !saveData && !slowConnection;
+}
+
+function warmImageSources(sources) {
+  sources.forEach((src) => {
+    const image = new window.Image();
+    image.decoding = "async";
+    image.src = src;
+    image.decode?.().catch(() => {});
+  });
+}
+
+function getInitialKeyboardEnabled() {
+  if (typeof window === "undefined") {
+    return true;
+  }
+
+  return !window.matchMedia("(max-width: 860px) and (pointer: coarse)").matches;
 }
 
 export default function App() {
@@ -346,6 +375,9 @@ export default function App() {
   const [lastSpeechMode, setLastSpeechMode] = useState("none");
   const [lastCueId, setLastCueId] = useState("start");
   const [frameIndex, setFrameIndex] = useState(0);
+  const [keyboardEnabled, setKeyboardEnabled] = useState(() => getInitialKeyboardEnabled());
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [expandedMobileSection, setExpandedMobileSection] = useState(null);
   const inputRef = useRef(null);
   const answerTimerRef = useRef(null);
   const frameTimerRef = useRef(null);
@@ -379,6 +411,14 @@ export default function App() {
         : lastCueId === "start"
           ? "Tippe auf Schildi oder auf Nochmal hören"
           : "Ton bereit";
+
+  function blurAnswerInput() {
+    inputRef.current?.blur();
+  }
+
+  function toggleMobileSection(sectionId) {
+    setExpandedMobileSection((current) => (current === sectionId ? null : sectionId));
+  }
 
   function clearAnswerTimer() {
     if (answerTimerRef.current) {
@@ -532,19 +572,30 @@ export default function App() {
     if (Number.isFinite(stored)) setBestScore(stored);
 
     audioBankRef.current = buildAudioBank();
-    window.setTimeout(() => inputRef.current?.focus(), 120);
 
-    ALL_FRAME_SOURCES.forEach((src) => {
-      const image = new window.Image();
-      image.decoding = "async";
-      image.src = src;
-      image.decode?.().catch(() => {});
-    });
+    let warmupTimeoutId = null;
+    let idleCallbackId = null;
+
+    if (shouldWarmHeavyMedia()) {
+      const warmMedia = () => warmImageSources(FRAME_WARMUP_SOURCES);
+
+      if ("requestIdleCallback" in window) {
+        idleCallbackId = window.requestIdleCallback(warmMedia, { timeout: 1800 });
+      } else {
+        warmupTimeoutId = window.setTimeout(warmMedia, 1200);
+      }
+    }
 
     return () => {
       clearAnswerTimer();
       stopFrameLoop();
       stopCurrentAudio();
+      if (warmupTimeoutId) {
+        window.clearTimeout(warmupTimeoutId);
+      }
+      if (idleCallbackId && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleCallbackId);
+      }
       audioBankRef.current.forEach((players) => {
         players.forEach((player) => {
           player.pause();
@@ -686,12 +737,20 @@ export default function App() {
   }, [soundEnabled]);
 
   useEffect(() => {
+    if (mobileMenuOpen) {
+      blurAnswerInput();
+    }
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
     function unlockStartCue(event) {
       if (startCueUnlockedRef.current) return;
 
       const target = event.target instanceof Element ? event.target : null;
       const ignoredInteractive =
-        target?.closest(".answer-grid, .answer-form, .table-grid, .top-actions button, .sound-button, .secondary-button, .submit-button");
+        target?.closest(
+          ".answer-grid, .answer-form, .table-grid, .top-actions button, .sound-button, .secondary-button, .submit-button, .mobile-menu-toggle, .mobile-utility-drawer button"
+        );
 
       if (ignoredInteractive) {
         return;
@@ -780,7 +839,12 @@ export default function App() {
       return;
     }
 
-    const players = audioBankRef.current.get(cue.id) ?? [];
+    let players = audioBankRef.current.get(cue.id);
+    if (!players) {
+      players = createAudioPlayers(cue);
+      audioBankRef.current.set(cue.id, players);
+    }
+
     for (const player of players) {
       try {
         stopCurrentAudio();
@@ -896,12 +960,13 @@ export default function App() {
   async function checkAnswer(answer) {
     if (gameFinished || isChecking) return;
 
+    blurAnswerInput();
+
     const number = cleanAnswer(answer);
     if (number === null) {
       setFeedback("Bitte gib nur ganze Zahlen zwischen 0 und 100 ein.");
       setLastWasCorrect(false);
       await playCue("inputWarning");
-      window.setTimeout(() => inputRef.current?.focus(), 30);
       return;
     }
 
@@ -959,7 +1024,6 @@ export default function App() {
     }
 
     setIsChecking(false);
-    window.setTimeout(() => inputRef.current?.focus(), 60);
   }
 
   function resetGame() {
@@ -985,8 +1049,9 @@ export default function App() {
     setTurtleScene("hello");
     setTurtleSpeech(START_TEXT);
     setFrameIndex(0);
+    setMobileMenuOpen(false);
+    setExpandedMobileSection(null);
     frameStepRef.current = 0;
-    window.setTimeout(() => inputRef.current?.focus(), 80);
   }
 
   function replayCurrentCue() {
@@ -1006,51 +1071,24 @@ export default function App() {
     checkAnswer(typedAnswer);
   }
 
+  function toggleKeyboardInput() {
+    setKeyboardEnabled((current) => {
+      const next = !current;
+
+      if (!next) {
+        setTypedAnswer("");
+        blurAnswerInput();
+      }
+
+      return next;
+    });
+  }
+
   return (
     <main className="app-shell">
       <section className="app-container">
-        <header className="hero-card">
-          <div className="hero-copy">
-            <p className="eyebrow">Schildkrötenklasse · Einmaleins-Spiel</p>
-            <h1>Samuel rechnet mit Schildi</h1>
-            <p className="hero-text">
-              Übe das kleine Einmaleins von 0 bis 10. Schildi begleitet dich ruhig, freundlich und mit echter Stimme.
-            </p>
-          </div>
-
-          <div className="best-card" aria-label={`Bester Lauf ${bestScore} von ${ROUNDS_PER_GAME}`}>
-            <span>Bester Lauf</span>
-            <strong>{bestScore}/{ROUNDS_PER_GAME}</strong>
-          </div>
-        </header>
-
         <div className="layout-grid">
-          <section className="game-card" aria-label="Spielbereich">
-            <div className="game-topline">
-              <div>
-                <p className="round-label">Aufgabe {Math.min(round + 1, ROUNDS_PER_GAME)} von {ROUNDS_PER_GAME}</p>
-                <p className="score-label">Punkte: {score} · Serie: {streak}</p>
-              </div>
-
-              <div className="top-actions">
-                <button
-                  type="button"
-                  onClick={() => setSoundEnabled((value) => !value)}
-                  className="sound-button"
-                  aria-pressed={soundEnabled}
-                >
-                  {soundEnabled ? "Ton an" : "Ton aus"}
-                </button>
-                <button type="button" onClick={replayCurrentCue} className="secondary-button">Nochmal hören</button>
-                <button type="button" onClick={resetGame} className="secondary-button">Neu starten</button>
-                <button type="button" onClick={resetAppCache} className="secondary-button">Cache zurücksetzen</button>
-              </div>
-            </div>
-
-            <div className={`audio-status ${lastSpeechMode === "missing-audio" ? "missing" : "ok"}`}>
-              {audioStatusText}
-            </div>
-
+          <section className="game-card play-panel" aria-label="Spielbereich">
             <div
               className={`turtle-panel scene-${turtleScene} motion-${currentScene.motion}`}
               aria-label="Schildkröten-Maskottchen Schildi"
@@ -1095,10 +1133,6 @@ export default function App() {
               </div>
             </div>
 
-            <div className="progress-track" aria-hidden="true" data-testid="progress-track">
-              <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
-            </div>
-
             {!gameFinished ? (
               <>
                 <div className="task-card">
@@ -1119,27 +1153,6 @@ export default function App() {
                     </button>
                   ))}
                 </div>
-
-                <form onSubmit={handleSubmit} className="answer-form">
-                  <label className="answer-label" htmlFor="typed-answer">Deine Antwort</label>
-                  <div className="answer-row">
-                    <input
-                      ref={inputRef}
-                      id="typed-answer"
-                      inputMode="numeric"
-                      min="0"
-                      max="100"
-                      type="number"
-                      value={typedAnswer}
-                      onChange={(event) => setTypedAnswer(event.target.value)}
-                      placeholder="0 bis 100"
-                      className="answer-input"
-                      disabled={isChecking}
-                      data-testid="answer-input"
-                    />
-                    <button type="submit" className="submit-button" disabled={isChecking} data-testid="submit-answer">Prüfen</button>
-                  </div>
-                </form>
               </>
             ) : (
               <div className="finish-card">
@@ -1153,54 +1166,213 @@ export default function App() {
                 <button type="button" onClick={resetGame} className="submit-button">Noch einmal spielen</button>
               </div>
             )}
+          </section>
+        </div>
 
-            <div
-              className={`feedback ${lastWasCorrect === true ? "correct" : lastWasCorrect === false ? "wrong" : "neutral"}`}
-              aria-live="polite"
-              data-testid="feedback"
+        <button
+          type="button"
+          className="mobile-menu-toggle"
+          aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-utility-drawer"
+          onClick={() => setMobileMenuOpen((current) => !current)}
+        >
+          {mobileMenuOpen ? "Menü schließen" : "Menü öffnen"}
+        </button>
+
+        <div
+          className={mobileMenuOpen ? "mobile-utility-backdrop open" : "mobile-utility-backdrop"}
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden={mobileMenuOpen ? "false" : "true"}
+        />
+
+        <aside
+          id="mobile-utility-drawer"
+          className={mobileMenuOpen ? "mobile-utility-drawer open" : "mobile-utility-drawer"}
+          aria-label="Zusätzliche Einstellungen und Infos"
+        >
+          <div className="mobile-utility-header">
+            <h2>Mehr</h2>
+            <button type="button" className="secondary-button" onClick={() => setMobileMenuOpen(false)}>Schließen</button>
+          </div>
+
+          <section className="mobile-utility-section">
+            <button
+              type="button"
+              className={expandedMobileSection === "tables" ? "mobile-section-toggle active" : "mobile-section-toggle"}
+              onClick={() => toggleMobileSection("tables")}
+              aria-expanded={expandedMobileSection === "tables"}
             >
-              {feedback}
-            </div>
+              Tafeln auswählen
+            </button>
+            {expandedMobileSection === "tables" ? (
+              <div className="mobile-section-content">
+                <div className="table-grid mobile-table-grid">
+                  {TABLES.map((number) => {
+                    const active = selectedTables.includes(number);
+                    return (
+                      <button
+                        key={`mobile-${number}`}
+                        type="button"
+                        onClick={() => toggleTable(number)}
+                        disabled={round > 0 && !gameFinished}
+                        className={active ? "table-button active" : "table-button"}
+                        aria-pressed={active}
+                      >
+                        {number}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
           </section>
 
-          <aside className="settings-card" aria-label="Einstellungen">
-            <h2>Tafeln auswählen</h2>
-            <p>Vor dem Start anklicken. Während einer Runde bleiben die Tafeln bewusst fest.</p>
+          <section className="mobile-utility-section">
+            <button
+              type="button"
+              className={expandedMobileSection === "tips" ? "mobile-section-toggle active" : "mobile-section-toggle"}
+              onClick={() => toggleMobileSection("tips")}
+              aria-expanded={expandedMobileSection === "tips"}
+            >
+              Tipps
+            </button>
+            {expandedMobileSection === "tips" ? (
+              <div className="mobile-section-content">
+                <div className="tip-card mobile-tip-card">
+                  <h3>Trainer-Tipp</h3>
+                  <p>{currentPraise}</p>
+                </div>
+                <div className="info-card mobile-info-card">
+                  <h3>So übst du gut</h3>
+                  <ul>
+                    <li>laut oder leise im Kopf mitrechnen</li>
+                    <li>erst denken, dann tippen</li>
+                    <li>Fehler sind erlaubt und helfen beim Lernen</li>
+                    <li>eine Runde hat 10 Aufgaben</li>
+                  </ul>
+                </div>
+              </div>
+            ) : null}
+          </section>
 
-            <div className="table-grid">
-              {TABLES.map((number) => {
-                const active = selectedTables.includes(number);
-                return (
+          <section className="mobile-utility-section">
+            <button
+              type="button"
+              className={expandedMobileSection === "score" ? "mobile-section-toggle active" : "mobile-section-toggle"}
+              onClick={() => toggleMobileSection("score")}
+              aria-expanded={expandedMobileSection === "score"}
+            >
+              Mein Punktestand
+            </button>
+            {expandedMobileSection === "score" ? (
+              <div className="mobile-section-content">
+                <div className="mobile-score-grid">
+                  <div className="mobile-score-card">
+                    <span>Bester Lauf</span>
+                    <strong>{bestScore}/{ROUNDS_PER_GAME}</strong>
+                  </div>
+                  <div className="mobile-score-card">
+                    <span>Aktuell</span>
+                    <strong>{score}/{ROUNDS_PER_GAME}</strong>
+                  </div>
+                  <div className="mobile-score-card">
+                    <span>Aufgabe</span>
+                    <strong>{Math.min(round + 1, ROUNDS_PER_GAME)}/{ROUNDS_PER_GAME}</strong>
+                  </div>
+                  <div className="mobile-score-card">
+                    <span>Serie</span>
+                    <strong>{streak}</strong>
+                  </div>
+                </div>
+                <div className="mobile-feedback-card">
+                  <span>Hinweis</span>
+                  <p>{feedback}</p>
+                </div>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="mobile-utility-section">
+            <button
+              type="button"
+              className={expandedMobileSection === "keyboard" ? "mobile-section-toggle active" : "mobile-section-toggle"}
+              onClick={() => toggleMobileSection("keyboard")}
+              aria-expanded={expandedMobileSection === "keyboard"}
+            >
+              Tastatur an/aus
+            </button>
+            {expandedMobileSection === "keyboard" ? (
+              <div className="mobile-section-content">
+                <div className="toggle-card mobile-toggle-card">
+                  <h3>Tastatureingabe</h3>
+                  <p>Auf dem Smartphone bleibt die Tastatur ruhig aus, bis du sie bewusst wieder einschaltest.</p>
                   <button
-                    key={number}
                     type="button"
-                    onClick={() => toggleTable(number)}
-                    disabled={round > 0 && !gameFinished}
-                    className={active ? "table-button active" : "table-button"}
-                    aria-pressed={active}
+                    onClick={toggleKeyboardInput}
+                    className={keyboardEnabled ? "settings-toggle-button active" : "settings-toggle-button"}
+                    aria-pressed={keyboardEnabled}
                   >
-                    {number}
+                    {keyboardEnabled ? "Tastatur an" : "Tastatur aus"}
                   </button>
-                );
-              })}
-            </div>
 
-            <div className="tip-card">
-              <h3>Trainer-Tipp</h3>
-              <p>{currentPraise}</p>
-            </div>
+                  {keyboardEnabled ? (
+                    <form onSubmit={handleSubmit} className="answer-form drawer-answer-form">
+                      <label className="answer-label" htmlFor="typed-answer">Deine Antwort</label>
+                      <div className="answer-row">
+                        <input
+                          ref={inputRef}
+                          id="typed-answer"
+                          inputMode="numeric"
+                          min="0"
+                          max="100"
+                          type="number"
+                          value={typedAnswer}
+                          onChange={(event) => setTypedAnswer(event.target.value)}
+                          placeholder="0 bis 100"
+                          className="answer-input"
+                          disabled={isChecking}
+                          data-testid="answer-input"
+                        />
+                        <button type="submit" className="submit-button" disabled={isChecking} data-testid="submit-answer">Prüfen</button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="drawer-keyboard-hint">Solange die Tastatur aus ist, reichen oben die großen Antwortfelder.</div>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </section>
 
-            <div className="info-card">
-              <h3>So übst du gut</h3>
-              <ul>
-                <li>laut oder leise im Kopf mitrechnen</li>
-                <li>erst denken, dann tippen</li>
-                <li>Fehler sind erlaubt und helfen beim Lernen</li>
-                <li>eine Runde hat 10 Aufgaben</li>
-              </ul>
-            </div>
-          </aside>
-        </div>
+          <section className="mobile-utility-section">
+            <button
+              type="button"
+              className={expandedMobileSection === "actions" ? "mobile-section-toggle active" : "mobile-section-toggle"}
+              onClick={() => toggleMobileSection("actions")}
+              aria-expanded={expandedMobileSection === "actions"}
+            >
+              Top-Actions
+            </button>
+            {expandedMobileSection === "actions" ? (
+              <div className="mobile-section-content mobile-menu-actions">
+                <div className={`audio-status ${lastSpeechMode === "missing-audio" ? "missing" : "ok"}`}>
+                  {audioStatusText}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSoundEnabled((value) => !value)}
+                  className="sound-button mobile-action-button"
+                  aria-pressed={soundEnabled}
+                >
+                  {soundEnabled ? "Ton an" : "Ton aus"}
+                </button>
+                <button type="button" onClick={replayCurrentCue} className="secondary-button mobile-action-button">Nochmal hören</button>
+                <button type="button" onClick={resetGame} className="secondary-button mobile-action-button">Neu starten</button>
+                <button type="button" onClick={resetAppCache} className="secondary-button mobile-action-button">Cache zurücksetzen</button>
+              </div>
+            ) : null}
+          </section>
+        </aside>
       </section>
     </main>
   );

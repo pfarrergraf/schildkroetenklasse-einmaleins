@@ -56,7 +56,7 @@ button:disabled {
 }
 
 .app-container {
-  width: min(100%, 1080px);
+  width: min(100%, 760px);
   margin: 0 auto;
 }
 
@@ -138,9 +138,158 @@ h1 {
 }
 
 .layout-grid {
+  display: block;
+}
+
+.mobile-utility-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(23, 48, 40, 0.3);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.mobile-utility-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobile-menu-toggle {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + var(--safe-bottom));
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 132px;
+  min-height: 50px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  color: #ffffff;
+  background: linear-gradient(145deg, #244c3f, #173028);
+  box-shadow: 0 18px 32px rgba(23, 48, 40, 0.22);
+  font-weight: 900;
+}
+
+.mobile-utility-drawer {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(78px + var(--safe-bottom));
+  z-index: 35;
+  display: block;
+  max-height: min(72vh, 760px);
+  overflow-y: auto;
+  padding: 14px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 30px 50px rgba(23, 48, 40, 0.22);
+  backdrop-filter: blur(12px);
+  transform: translateY(calc(100% + 32px));
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.mobile-utility-drawer.open {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobile-utility-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.mobile-utility-header h2 {
+  margin-bottom: 0;
+  font-size: 1.3rem;
+}
+
+.mobile-utility-section + .mobile-utility-section {
+  margin-top: 10px;
+}
+
+.mobile-section-toggle {
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 18px;
+  color: #365547;
+  background: #f2f7f2;
+  box-shadow: inset 0 0 0 1px rgba(85, 133, 103, 0.12);
+  font-weight: 900;
+  text-align: left;
+}
+
+.mobile-section-toggle.active {
+  color: #ffffff;
+  background: linear-gradient(145deg, #5ab46d, #2f6b49);
+}
+
+.mobile-section-content {
+  padding-top: 10px;
+}
+
+.mobile-score-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mobile-score-card {
+  padding: 14px;
+  border-radius: 20px;
+  background: #f6fbf6;
+  border: 1px solid #ddeadd;
+}
+
+.mobile-score-card span {
+  display: block;
+  color: #587064;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.mobile-score-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.45rem;
+  line-height: 1.1;
+}
+
+.mobile-menu-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.mobile-action-button,
+.settings-toggle-button {
+  width: 100%;
+}
+
+.mobile-table-grid {
+  margin: 0;
+}
+
+.mobile-tip-card,
+.mobile-info-card,
+.mobile-toggle-card {
+  margin-top: 0;
+}
+
+.play-panel {
+  padding: 18px;
 }
 
 .game-card,
@@ -721,6 +870,11 @@ h1 {
   border: 1px solid rgba(85, 168, 92, 0.14);
 }
 
+.drawer-answer-form {
+  margin-top: 14px;
+  margin-bottom: 0;
+}
+
 .answer-label {
   color: #456154;
   font-size: 0.95rem;
@@ -853,9 +1007,70 @@ h1 {
 }
 
 .tip-card,
-.info-card {
+.info-card,
+.toggle-card {
   border-radius: 26px;
   padding: 18px;
+}
+
+.toggle-card {
+  margin-top: 18px;
+  background: #eef7fb;
+  border: 1px solid #d5e6f2;
+}
+
+.toggle-card p {
+  margin-bottom: 12px;
+  color: #4a6456;
+  line-height: 1.55;
+}
+
+.drawer-keyboard-hint {
+  margin-top: 12px;
+  color: #4d675a;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+.mobile-feedback-card {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 20px;
+  background: #f7fbf2;
+  border: 1px solid #dfebd3;
+}
+
+.mobile-feedback-card span {
+  display: block;
+  color: #587064;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.mobile-feedback-card p {
+  margin: 8px 0 0;
+  color: #365547;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+.settings-toggle-button {
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: 20px;
+  color: #365547;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(85, 133, 103, 0.12);
+  font-weight: 900;
+}
+
+.settings-toggle-button.active {
+  color: #ffffff;
+  background: linear-gradient(145deg, #5ab46d, #2f6b49);
+  box-shadow: 0 12px 24px rgba(47, 107, 73, 0.18);
 }
 
 .tip-card {
@@ -889,60 +1104,51 @@ h1 {
 }
 
 @media (max-width: 860px) {
-  .layout-grid {
-    grid-template-columns: 1fr;
+  .mobile-menu-toggle {
+    right: 14px;
+    bottom: calc(14px + var(--safe-bottom));
   }
 
-  .hero-card {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .best-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    text-align: left;
+  .mobile-utility-drawer {
+    left: 10px;
+    right: 10px;
+    bottom: calc(72px + var(--safe-bottom));
   }
 }
 
 @media (max-width: 620px) {
   .app-shell {
-    padding: 12px 10px calc(16px + var(--safe-bottom));
+    padding: 8px 8px calc(14px + var(--safe-bottom));
   }
 
-  .hero-card,
   .game-card,
   .settings-card {
     border-radius: 26px;
-    padding: 18px;
+    padding: 14px;
+    box-shadow: 0 18px 36px rgba(47, 86, 65, 0.12);
+    backdrop-filter: none;
   }
 
-  .game-topline {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .top-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .secondary-button,
-  .sound-button {
-    width: 100%;
+  .play-panel {
+    min-height: calc(100vh - 16px - var(--safe-bottom));
   }
 
   .turtle-panel {
     grid-template-columns: 1fr;
     justify-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 12px;
+    border-radius: 24px;
   }
 
   .turtle-speech {
     width: 100%;
-    min-height: 78px;
+    min-height: 64px;
+    padding: 14px 16px;
     text-align: center;
     justify-content: center;
+    font-size: clamp(0.98rem, 3vw, 1.08rem);
   }
 
   .turtle-speech::after {
@@ -955,11 +1161,65 @@ h1 {
 
   .turtle-stage {
     width: 100%;
-    min-height: 250px;
+    min-height: 180px;
+  }
+
+  .turtle-orbit {
+    display: none;
+  }
+
+  .turtle-glow {
+    inset: 36px 32px 34px;
+    filter: blur(4px);
+  }
+
+  .task-card {
+    margin-bottom: 12px;
+    padding: 16px 12px;
+    border-radius: 24px;
+  }
+
+  .task-card p {
+    margin-bottom: 8px;
+  }
+
+  .task-card div {
+    font-size: clamp(3.3rem, 14vw, 4.4rem);
+  }
+
+  .motion-float .turtle-card,
+  .motion-breathe .turtle-card,
+  .motion-celebrate .turtle-card,
+  .motion-comfort .turtle-card,
+  .motion-alert .turtle-card,
+  .motion-float .turtle-speech,
+  .motion-breathe .turtle-speech,
+  .motion-celebrate .turtle-speech,
+  .motion-comfort .turtle-speech,
+  .motion-alert .turtle-speech,
+  .motion-float .turtle-badge,
+  .motion-breathe .turtle-badge,
+  .motion-celebrate .turtle-badge,
+  .motion-comfort .turtle-badge,
+  .motion-alert .turtle-badge,
+  .motion-float .turtle-orbit,
+  .motion-breathe .turtle-orbit,
+  .motion-celebrate .turtle-orbit,
+  .motion-comfort .turtle-orbit,
+  .motion-alert .turtle-orbit {
+    animation: none;
   }
 
   .answer-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 0;
+  }
+
+  .answer-button {
+    min-height: 68px;
+    border-radius: 20px;
+    font-size: clamp(1.7rem, 7vw, 2.3rem);
   }
 
   .answer-row {
@@ -969,5 +1229,42 @@ h1 {
   .submit-button {
     width: 100%;
     min-height: 58px;
+  }
+
+  .mobile-menu-toggle {
+    right: 10px;
+    bottom: calc(10px + var(--safe-bottom));
+    min-width: 120px;
+    min-height: 46px;
+    padding: 10px 16px;
+  }
+
+  .mobile-utility-drawer {
+    left: 8px;
+    right: 8px;
+    bottom: calc(64px + var(--safe-bottom));
+    padding: 12px;
+    border-radius: 24px;
+    max-height: min(74vh, 640px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turtle-image,
+  .turtle-card,
+  .turtle-speech,
+  .turtle-badge,
+  .turtle-orbit {
+    animation: none !important;
+  }
+
+  .secondary-button,
+  .sound-button,
+  .submit-button,
+  .table-button,
+  .answer-button,
+  .progress-fill,
+  .turtle-frame-align {
+    transition: none !important;
   }
 }
