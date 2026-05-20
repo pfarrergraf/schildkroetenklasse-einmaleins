@@ -1812,7 +1812,7 @@ export default function App() {
           achievementTitle={rewardTriggerTitle}
         />
 
-        <RewardVideoModal reward={videoReward} onClose={handleRewardVideoClose} soundEnabled={soundEnabled} />
+        <RewardVideoModal reward={videoReward} onClose={handleRewardVideoClose} />
 
         {collectionOpen ? (
           <div className="reward-modal-backdrop" role="presentation">
