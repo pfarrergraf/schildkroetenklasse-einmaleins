@@ -30,8 +30,14 @@ export default function RewardVideoModal({ reward, onClose }) {
   }
 
   return (
-    <div className="reward-modal-backdrop reward-video-backdrop" role="presentation">
-      <section className="reward-video-modal" role="dialog" aria-modal="true" aria-labelledby="reward-video-title">
+    <div className="reward-modal-backdrop reward-video-backdrop" role="presentation" onClick={onClose}>
+      <section
+        className="reward-video-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reward-video-title"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="reward-video-header">
           <div>
             <p className="reward-kicker">Neuer Dino</p>
@@ -49,7 +55,7 @@ export default function RewardVideoModal({ reward, onClose }) {
             src={reward.videoPath}
             controls
             playsInline
-            preload="auto"
+            preload="metadata"
           >
             Dein Browser kann dieses Dino-Video leider nicht abspielen.
           </video>

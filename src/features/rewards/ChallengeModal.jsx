@@ -31,7 +31,7 @@ export default function ChallengeModal({ completedIds = [], onAccept, onClose })
 
   if (selectedChallenge) {
     return (
-      <div className="reward-modal-backdrop" role="presentation">
+      <div className="reward-modal-backdrop" role="presentation" onClick={(event) => event.target === event.currentTarget && onClose?.()}>
         <section
           className="reward-modal challenge-detail-modal"
           role="dialog"
@@ -84,10 +84,10 @@ export default function ChallengeModal({ completedIds = [], onAccept, onClose })
               onClick={handleAccept}
               disabled={acceptDisabled}
             >
-              Herausforderung annehmen!
+              Ja, Herausforderung annehmen
             </button>
             <button type="button" className="secondary-button" onClick={handleBack}>
-              Zurück
+              Nein, andere wählen
             </button>
           </div>
         </section>
@@ -96,7 +96,7 @@ export default function ChallengeModal({ completedIds = [], onAccept, onClose })
   }
 
   return (
-    <div className="reward-modal-backdrop" role="presentation">
+    <div className="reward-modal-backdrop" role="presentation" onClick={(event) => event.target === event.currentTarget && onClose?.()}>
       <section
         className="reward-modal challenge-list-modal"
         role="dialog"

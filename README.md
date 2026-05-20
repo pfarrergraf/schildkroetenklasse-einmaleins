@@ -87,6 +87,7 @@ Konfiguration über `.env` oder die Hosting-Umgebung:
 ```text
 VITE_REWARD_BACKEND_MODE=local
 VITE_REWARD_REMOTE_URL=https://example.com/api
+VITE_REWARD_REMOTE_PLAYER_ID=samuel
 VITE_REWARD_REMOTE_TIMEOUT_MS=4000
 ```
 
@@ -94,6 +95,7 @@ Remote-Vertrag für den Frontend-Sync:
 
 - `GET <VITE_REWARD_REMOTE_URL>/reward-state`
 - `PUT <VITE_REWARD_REMOTE_URL>/reward-state`
+- optional mit `?playerId=<VITE_REWARD_REMOTE_PLAYER_ID>` sowie Header `X-Reward-Player`
 - Request- und Response-Body: `{ "rewardCheckpoint": { ... } }`
 
 Der Checkpoint enthält:
@@ -101,11 +103,19 @@ Der Checkpoint enthält:
 - `unlockedRewardIds`
 - `bonusStars`
 - `rewardedTableCount`
+- `consecutivePerfectRounds`
+- `completedAchievementIds`
 - `pendingRewardOffer`
 - `rewardEvents`
 - `updatedAt`
 
 Wichtige Garantie: selbst bei offenem, noch nicht ausgewähltem Reward geht nach Reload oder Fallback kein Reward mehr verloren. Offene Belohnungen werden persistent checkpointed und wieder aufgenommen.
+
+Wichtig für Online-Betrieb:
+
+- Die App bleibt local-first und fällt bei Offline, Timeout oder Backend-Fehlern sofort auf den lokalen Checkpoint zurück.
+- Für echten Mehrgeräte-Betrieb sollte das Remote-Backend pro Kind/Profil getrennte Reward-States verwalten.
+- Secrets gehören nicht in `VITE_*`; diese Variablen sind öffentliches Frontend-Build-Config.
 
 ## Hinweise zu Audio
 

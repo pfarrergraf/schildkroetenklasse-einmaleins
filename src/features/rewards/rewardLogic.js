@@ -1,7 +1,15 @@
-import { DINO_REWARDS, pickRewardChoices } from "./rewardCatalog";
+import { DINO_REWARDS, pickRewardChoices } from "./rewardCatalog.js";
 
 export const CORE_TABLES = [0, 1, 2, 5, 10];
 export const NON_CORE_TABLES = [3, 4, 6, 7, 8, 9];
+
+function includesExactly(selectedTables, expectedTables) {
+  return (
+    Array.isArray(selectedTables) &&
+    selectedTables.length === expectedTables.length &&
+    expectedTables.every((table) => selectedTables.includes(table))
+  );
+}
 
 export const ACHIEVEMENTS = [
   {
@@ -25,19 +33,21 @@ export const ACHIEVEMENTS = [
     challengeTablePreset: [0, 1, 2, 5, 10],
     challengeTableOptions: null,
     check: ({ finalScore, totalRounds, selectedTables }) =>
-      finalScore === totalRounds && CORE_TABLES.every((t) => selectedTables.includes(t)),
+      finalScore === totalRounds && includesExactly(selectedTables, CORE_TABLES),
   },
   {
-    id: "non-core-any",
-    title: "Schwere Reihe geschafft",
-    shortTitle: "Schwere Reihe",
-    description: "Löse 10 von 10 mit mindestens einer nicht-Kernaufgabe (3, 4, 6, 7, 8, 9).",
+    id: "non-core-single",
+    title: "Schwere Reihe solo",
+    shortTitle: "Schwere Solo-Reihe",
+    description: "Löse 10 von 10 mit genau einer schweren Reihe: 3, 4, 6, 7, 8 oder 9.",
     challengeText: "Wähle eine Reihe aus 3, 4, 6, 7, 8 oder 9 und löse alle 10 Aufgaben richtig!",
     schildiText: "Such dir eine schwere Reihe aus – 3, 4, 6, 7, 8 oder 9. Schaffst du alle 10 von 10?",
     challengeTablePreset: null,
     challengeTableOptions: NON_CORE_TABLES,
     check: ({ finalScore, totalRounds, selectedTables }) =>
-      finalScore === totalRounds && selectedTables.some((t) => NON_CORE_TABLES.includes(t)),
+      finalScore === totalRounds &&
+      selectedTables.length === 1 &&
+      NON_CORE_TABLES.includes(selectedTables[0]),
   },
   {
     id: "double-perfect",
@@ -61,7 +71,7 @@ export const ACHIEVEMENTS = [
     challengeTableOptions: null,
     check: ({ finalScore, totalRounds, selectedTables }) =>
       finalScore === totalRounds &&
-      selectedTables.length > 0 &&
+      selectedTables.length > 1 &&
       selectedTables.every((t) => NON_CORE_TABLES.includes(t)),
   },
   {
@@ -74,7 +84,7 @@ export const ACHIEVEMENTS = [
     challengeTablePreset: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     challengeTableOptions: null,
     check: ({ finalScore, totalRounds, selectedTables }) =>
-      finalScore === totalRounds && selectedTables.length === 11,
+      finalScore === totalRounds && includesExactly(selectedTables, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
   },
 ];
 

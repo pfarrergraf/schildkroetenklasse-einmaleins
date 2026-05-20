@@ -184,6 +184,11 @@
   font-weight: 1000;
 }
 
+.reward-choice-select:disabled,
+.reward-later-button:disabled {
+  opacity: 0.7;
+}
+
 .animated-dino {
   position: relative;
   display: grid;
@@ -347,6 +352,10 @@
 @keyframes lumiCardSwing { 0%,100%{transform:translateX(0) rotate(0)} 50%{transform:translateX(4px) rotate(3deg)} }
 
 @media (max-width: 680px) {
+  .reward-modal-backdrop {
+    backdrop-filter: none;
+  }
+
   .reward-choice-grid,
   .collection-grid {
     grid-template-columns: 1fr;

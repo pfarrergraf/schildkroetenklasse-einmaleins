@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { getDinoAnimation } from "./dinoAnimationCatalog.js";
+import { getDinoAnimation, loadDinoFrames } from "./dinoAnimationCatalog.js";
 
 export default function DinoAnimation({
   speciesId,
@@ -12,14 +12,39 @@ export default function DinoAnimation({
 }) {
   const dino = getDinoAnimation(speciesId || rewardId);
   const [frameIndex, setFrameIndex] = useState(0);
+  const [frames, setFrames] = useState([]);
+  const [framesReady, setFramesReady] = useState(false);
   const audioRef = useRef(null);
-
-  const frames = dino?.frames?.length ? dino.frames : [];
   const frameMs = useMemo(() => {
     if (dino?.motion === "stomp") return 135;
     if (dino?.motion === "wing-float") return 115;
     return 150;
   }, [dino?.motion]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!dino) {
+      setFrames([]);
+      setFramesReady(true);
+      return undefined;
+    }
+
+    setFramesReady(false);
+    setFrameIndex(0);
+
+    void loadDinoFrames(dino.id, { limit: active ? undefined : 1 }).then((nextFrames) => {
+      if (cancelled) {
+        return;
+      }
+      setFrames(nextFrames);
+      setFramesReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [active, dino]);
 
   useEffect(() => {
     if (!active || frames.length <= 1) {
@@ -48,12 +73,16 @@ export default function DinoAnimation({
     };
   }, [playSound, dino?.sound]);
 
-  if (!dino || frames.length === 0) {
+  if (!dino || (framesReady && frames.length === 0)) {
     return (
       <div className={`dino-animation dino-placeholder size-${size} ${className}`}>
         <span>?</span>
       </div>
     );
+  }
+
+  if (!framesReady || frames.length === 0) {
+    return <div className={`dino-animation dino-placeholder size-${size} ${className}`} aria-hidden="true" />;
   }
 
   return (

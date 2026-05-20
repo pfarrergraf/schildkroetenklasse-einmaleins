@@ -1,13 +1,11 @@
 const dinoFrameModules = import.meta.glob("../../../assets/dinos/*/frame_*.png", {
-  eager: true,
   import: "default",
 });
 
-function getFramesForSpecies(speciesId) {
+function getFrameEntriesForSpecies(speciesId) {
   return Object.entries(dinoFrameModules)
     .filter(([path]) => path.includes(`/assets/dinos/${speciesId}/`))
-    .sort(([left], [right]) => left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" }))
-    .map(([, src]) => src);
+    .sort(([left], [right]) => left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" }));
 }
 
 export const DINO_ANIMATIONS = [
@@ -20,7 +18,6 @@ export const DINO_ANIMATIONS = [
     shortText: "Bruno macht lange Hälse vor Freude.",
     motion: "gentle-walk",
     sound: `${import.meta.env.BASE_URL}audio/rewards/brachiosaurus-altithorax.wav`,
-    frames: getFramesForSpecies("brachiosaurus-altithorax"),
   },
   {
     id: "triceratops-horridus",
@@ -31,7 +28,6 @@ export const DINO_ANIMATIONS = [
     shortText: "Trixi stampft vor Begeisterung.",
     motion: "stomp",
     sound: `${import.meta.env.BASE_URL}audio/rewards/triceratops-horridus.wav`,
-    frames: getFramesForSpecies("triceratops-horridus"),
   },
   {
     id: "pteranodon-longiceps",
@@ -42,7 +38,6 @@ export const DINO_ANIMATIONS = [
     shortText: "Pico schwebt durch die Sammlung.",
     motion: "wing-float",
     sound: `${import.meta.env.BASE_URL}audio/rewards/pteranodon-longiceps.wav`,
-    frames: getFramesForSpecies("pteranodon-longiceps"),
   },
   {
     id: "parasaurolophus-walkeri",
@@ -53,7 +48,6 @@ export const DINO_ANIMATIONS = [
     shortText: "Paula nickt fröhlich mit ihrem Kamm.",
     motion: "gentle-walk",
     sound: `${import.meta.env.BASE_URL}audio/rewards/parasaurolophus-walkeri.wav`,
-    frames: getFramesForSpecies("parasaurolophus-walkeri"),
   },
   {
     id: "velociraptor-mongoliensis",
@@ -64,7 +58,6 @@ export const DINO_ANIMATIONS = [
     shortText: "Vito tänzelt blitzschnell vor Freude.",
     motion: "stomp",
     sound: `${import.meta.env.BASE_URL}audio/rewards/velociraptor-mongoliensis.wav`,
-    frames: getFramesForSpecies("velociraptor-mongoliensis"),
   },
   {
     id: "stegosaurus-stenops",
@@ -75,7 +68,6 @@ export const DINO_ANIMATIONS = [
     shortText: "Nora wackelt mit ihren Rückenplatten.",
     motion: "gentle-walk",
     sound: `${import.meta.env.BASE_URL}audio/rewards/stegosaurus-stenops.wav`,
-    frames: getFramesForSpecies("stegosaurus-stenops"),
   },
   {
     id: "tyrannosaurus-rex",
@@ -86,7 +78,6 @@ export const DINO_ANIMATIONS = [
     shortText: "Roxi brüllt begeistert los.",
     motion: "stomp",
     sound: `${import.meta.env.BASE_URL}audio/rewards/tyrannosaurus-rex.wav`,
-    frames: getFramesForSpecies("tyrannosaurus-rex"),
   },
   {
     id: "euoplocephalus-tutus",
@@ -97,7 +88,6 @@ export const DINO_ANIMATIONS = [
     shortText: "Eulo schwingt fröhlich seine Schwanzkeule.",
     motion: "gentle-walk",
     sound: `${import.meta.env.BASE_URL}audio/rewards/euoplocephalus-tutus.wav`,
-    frames: getFramesForSpecies("euoplocephalus-tutus"),
   },
 ];
 
@@ -105,4 +95,16 @@ export function getDinoAnimation(speciesIdOrRewardId) {
   return DINO_ANIMATIONS.find(
     (dino) => dino.id === speciesIdOrRewardId || dino.rewardId === speciesIdOrRewardId
   );
+}
+
+export async function loadDinoFrames(speciesIdOrRewardId, { limit } = {}) {
+  const dino = getDinoAnimation(speciesIdOrRewardId);
+  if (!dino) {
+    return [];
+  }
+
+  const frameEntries = getFrameEntriesForSpecies(dino.id);
+  const selectedEntries = typeof limit === "number" ? frameEntries.slice(0, limit) : frameEntries;
+
+  return Promise.all(selectedEntries.map(([, loader]) => loader()));
 }

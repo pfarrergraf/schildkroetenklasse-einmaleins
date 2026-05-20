@@ -3,6 +3,13 @@ dist/
 output/
 .archive/
 .tools/
+archive/
+assets/_original_backups/
+schildi-20-belohnungen-animation-pack/
+schildi-dino-assets-v2/
+schildi-photoreal-dino-animation-pack/
+schildi-real-render-series-only-v2/
+schildi-upgrade-modules/
 progress.md
 CODEX-INSTRUCTION.md
 .env

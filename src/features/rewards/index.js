@@ -14,6 +14,8 @@ export {
 	addBonusStar,
 	loadRewardedTableCount,
 	saveRewardedTableCount,
+	loadConsecutivePerfectRounds,
+	saveConsecutivePerfectRounds,
 	loadCompletedAchievementIds,
 	saveCompletedAchievementIds,
 	addCompletedAchievementIds,

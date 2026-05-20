@@ -802,6 +802,44 @@ h1 {
   transition: width 280ms ease;
 }
 
+.game-status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.game-status-pill {
+  min-height: 52px;
+  padding: 10px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(85, 133, 103, 0.14);
+  box-shadow: 0 10px 20px rgba(47, 86, 65, 0.06);
+}
+
+.game-status-pill.challenge {
+  background: #fff8d8;
+  border-color: rgba(246, 187, 69, 0.3);
+}
+
+.game-status-pill span {
+  display: block;
+  color: #587064;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.game-status-pill strong {
+  display: block;
+  margin-top: 4px;
+  color: #173028;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
 .task-card {
   margin-bottom: 20px;
   padding: clamp(24px, 7vw, 44px) 18px;
@@ -1179,6 +1217,11 @@ h1 {
     margin-bottom: 12px;
     padding: 16px 12px;
     border-radius: 24px;
+  }
+
+  .game-status-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .task-card p {

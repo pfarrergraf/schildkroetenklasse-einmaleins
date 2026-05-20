@@ -1,10 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildRewardOffer } from "../src/features/rewards/rewardLogic.js";
+import { buildRewardOffer, checkNewAchievements } from "../src/features/rewards/rewardLogic.js";
 import {
   applyRewardCheckpoint,
   createRewardCheckpoint,
+  loadCompletedAchievementIds,
+  loadConsecutivePerfectRounds,
   loadPendingRewardOffer,
   loadRewardEvents,
   savePendingRewardOffer,
@@ -39,7 +41,11 @@ class MemoryStorage {
 
 test.beforeEach(() => {
   global.window = { localStorage: new MemoryStorage() };
-  global.navigator = { onLine: true };
+  Object.defineProperty(globalThis, "navigator", {
+    value: { onLine: true },
+    configurable: true,
+    writable: true,
+  });
 });
 
 test.afterEach(() => {
@@ -81,6 +87,22 @@ test("pending rewards survive checkpoint round-trips", () => {
   assert.deepEqual(checkpoint.pendingRewardOffer.choiceIds, ["bruno-bronto", "trixi-triceratops", "pico-pteranodon"]);
   assert.equal(loadPendingRewardOffer().offerId, "offer-1");
   assert.equal(loadRewardEvents().length, 1);
+});
+
+test("checkpoint round-trips achievements and consecutive perfect rounds", () => {
+  const checkpoint = applyRewardCheckpoint(
+    createRewardCheckpoint({
+      unlockedRewardIds: ["bruno-bronto"],
+      completedAchievementIds: ["perfect-any", "core-mix"],
+      consecutivePerfectRounds: 2,
+      updatedAt: "2026-05-20T10:00:02.000Z",
+    })
+  );
+
+  assert.deepEqual(checkpoint.completedAchievementIds, ["perfect-any", "core-mix"]);
+  assert.equal(checkpoint.consecutivePerfectRounds, 2);
+  assert.deepEqual(loadCompletedAchievementIds(), ["perfect-any", "core-mix"]);
+  assert.equal(loadConsecutivePerfectRounds(), 2);
 });
 
 test("remote reward persistence falls back to local checkpoint on failure", async () => {
@@ -142,9 +164,73 @@ test("remote hydration keeps the newer local checkpoint", async () => {
   assert.deepEqual(result.checkpoint.unlockedRewardIds, ["bruno-bronto"]);
 });
 
+test("remote persistence keeps newer local checkpoint when server echoes stale data", async () => {
+  const result = await persistRewardCheckpoint(
+    createRewardCheckpoint({
+      unlockedRewardIds: ["bruno-bronto"],
+      completedAchievementIds: ["perfect-any"],
+      updatedAt: "2026-05-20T12:00:00.000Z",
+    }),
+    {
+      env: {
+        VITE_REWARD_BACKEND_MODE: "remote",
+        VITE_REWARD_REMOTE_URL: "https://example.com/api",
+        VITE_REWARD_REMOTE_TIMEOUT_MS: "1000",
+        VITE_REWARD_REMOTE_PLAYER_ID: "samuel",
+      },
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            rewardCheckpoint: {
+              unlockedRewardIds: ["trixi-triceratops"],
+              completedAchievementIds: [],
+              bonusStars: 0,
+              rewardedTableCount: 0,
+              consecutivePerfectRounds: 0,
+              pendingRewardOffer: null,
+              rewardEvents: [],
+              updatedAt: "2026-05-20T11:00:00.000Z",
+            },
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        ),
+    }
+  );
+
+  assert.equal(result.status.transport, "remote");
+  assert.deepEqual(result.checkpoint.unlockedRewardIds, ["bruno-bronto"]);
+  assert.deepEqual(result.checkpoint.completedAchievementIds, ["perfect-any"]);
+});
+
 test("remote mode without url stays local", () => {
   const config = resolveRewardBackendConfig({ VITE_REWARD_BACKEND_MODE: "remote" });
 
   assert.equal(config.remoteEnabled, false);
   assert.equal(config.configuredMode, "remote");
+});
+
+test("achievement checks distinguish core mix and single hard row", () => {
+  const coreResults = checkNewAchievements({
+    finalScore: 10,
+    totalRounds: 10,
+    selectedTables: [0, 1, 2, 5, 10],
+    consecutivePerfect: 1,
+    completedIds: [],
+  }).map((achievement) => achievement.id);
+
+  const hardRowResults = checkNewAchievements({
+    finalScore: 10,
+    totalRounds: 10,
+    selectedTables: [7],
+    consecutivePerfect: 1,
+    completedIds: [],
+  }).map((achievement) => achievement.id);
+
+  assert.ok(coreResults.includes("core-mix"));
+  assert.ok(!coreResults.includes("non-core-single"));
+  assert.ok(hardRowResults.includes("non-core-single"));
+  assert.ok(!hardRowResults.includes("core-mix"));
 });

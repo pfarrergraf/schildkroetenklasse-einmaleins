@@ -27,7 +27,7 @@ export default function CollectionView({ unlockedIds, bonusStars = 0, onClose, s
           return (
             <article key={reward.id} className={isUnlocked ? "collection-card unlocked" : "collection-card locked"}>
               {isUnlocked ? (
-                <AnimatedDino reward={reward} size="collection" soundEnabled={soundEnabled} />
+                <AnimatedDino reward={reward} size="collection" soundEnabled={soundEnabled} active={false} />
               ) : (
                 <div className="dino-silhouette" aria-hidden="true">?</div>
               )}

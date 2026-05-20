@@ -1,4 +1,4 @@
-import { BONUS_STAR_KEY, DINO_REWARDS, REWARD_COLLECTION_KEY, getRewardById } from "./rewardCatalog";
+import { BONUS_STAR_KEY, DINO_REWARDS, REWARD_COLLECTION_KEY, getRewardById } from "./rewardCatalog.js";
 
 const LEGACY_REWARD_STATE_KEY = "schildkroetenklasse-rewards-v1";
 const PREVIOUS_REWARD_COLLECTION_KEY = "schildi-dino-friends-v2";
@@ -6,6 +6,8 @@ const REWARDED_TABLE_COUNT_KEY = "schildi-dino-rewarded-table-count-v1";
 const PENDING_REWARD_OFFER_KEY = "schildi-dino-pending-offer-v1";
 const REWARD_CHECKPOINT_KEY = "schildi-dino-checkpoint-v1";
 const REWARD_EVENT_LOG_KEY = "schildi-dino-event-log-v1";
+const CONSECUTIVE_PERFECT_KEY = "schildi-consecutive-perfect-v1";
+const ACHIEVEMENTS_KEY = "schildi-achievements-v1";
 const REWARD_EVENT_LOG_LIMIT = 80;
 const LEGACY_REWARD_ID_MAP = {
   "dino-bruno": "bruno-bronto",
@@ -94,6 +96,14 @@ function sanitizeRewardedTableCount(value) {
   return Number.isInteger(value) && value >= 0 ? value : 0;
 }
 
+function sanitizeConsecutivePerfectRounds(value) {
+  return Number.isInteger(value) && value >= 0 ? value : 0;
+}
+
+function sanitizeCompletedAchievementIds(ids) {
+  return Array.from(new Set((Array.isArray(ids) ? ids : []).filter((id) => typeof id === "string")));
+}
+
 function sanitizeRewardEvent(rawEvent) {
   if (!rawEvent || typeof rawEvent !== "object") {
     return null;
@@ -134,6 +144,8 @@ function sanitizeRewardCheckpoint(rawCheckpoint) {
     unlockedRewardIds: sanitizeRewardIds(rawCheckpoint?.unlockedRewardIds),
     bonusStars: sanitizeBonusStars(rawCheckpoint?.bonusStars),
     rewardedTableCount: sanitizeRewardedTableCount(rawCheckpoint?.rewardedTableCount),
+    consecutivePerfectRounds: sanitizeConsecutivePerfectRounds(rawCheckpoint?.consecutivePerfectRounds),
+    completedAchievementIds: sanitizeCompletedAchievementIds(rawCheckpoint?.completedAchievementIds),
     pendingRewardOffer: sanitizedPendingRewardOffer,
     rewardEvents: sanitizeRewardEvents(rawCheckpoint?.rewardEvents),
     updatedAt: typeof rawCheckpoint?.updatedAt === "string" ? rawCheckpoint.updatedAt : new Date().toISOString(),
@@ -263,6 +275,8 @@ export function createRewardCheckpoint(overrides = {}) {
     unlockedRewardIds: overrides.unlockedRewardIds ?? loadUnlockedRewardIds(),
     bonusStars: overrides.bonusStars ?? loadBonusStars(),
     rewardedTableCount: overrides.rewardedTableCount ?? loadRewardedTableCount(),
+    consecutivePerfectRounds: overrides.consecutivePerfectRounds ?? loadConsecutivePerfectRounds(),
+    completedAchievementIds: overrides.completedAchievementIds ?? loadCompletedAchievementIds(),
     pendingRewardOffer: overrides.pendingRewardOffer ?? loadPendingRewardOffer(),
     rewardEvents: overrides.rewardEvents ?? storedCheckpoint?.rewardEvents ?? loadRewardEvents(),
     updatedAt: overrides.updatedAt ?? storedCheckpoint?.updatedAt ?? new Date().toISOString(),
@@ -302,6 +316,8 @@ export function applyRewardCheckpoint(checkpoint) {
   }
 
   saveRewardedTableCount(sanitizedCheckpoint.rewardedTableCount);
+  saveConsecutivePerfectRounds(sanitizedCheckpoint.consecutivePerfectRounds);
+  saveCompletedAchievementIds(sanitizedCheckpoint.completedAchievementIds);
   savePendingRewardOffer(sanitizedCheckpoint.pendingRewardOffer);
   saveRewardEvents(sanitizedCheckpoint.rewardEvents);
   saveRewardCheckpoint(sanitizedCheckpoint);
@@ -363,7 +379,24 @@ export function saveRewardedTableCount(count) {
   return sanitizedCount;
 }
 
-const ACHIEVEMENTS_KEY = "schildi-achievements-v1";
+export function loadConsecutivePerfectRounds() {
+  if (typeof window === "undefined") return 0;
+
+  if (hasStoredValue(CONSECUTIVE_PERFECT_KEY)) {
+    const storedCount = Number(window.localStorage.getItem(CONSECUTIVE_PERFECT_KEY) || 0);
+    return sanitizeConsecutivePerfectRounds(storedCount);
+  }
+
+  return 0;
+}
+
+export function saveConsecutivePerfectRounds(count) {
+  if (typeof window === "undefined") return 0;
+
+  const sanitizedCount = sanitizeConsecutivePerfectRounds(count);
+  window.localStorage.setItem(CONSECUTIVE_PERFECT_KEY, String(sanitizedCount));
+  return sanitizedCount;
+}
 
 export function loadCompletedAchievementIds() {
   if (typeof window === "undefined") return [];
@@ -371,7 +404,7 @@ export function loadCompletedAchievementIds() {
     const raw = window.localStorage.getItem(ACHIEVEMENTS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === "string") : [];
+    return sanitizeCompletedAchievementIds(parsed);
   } catch {
     return [];
   }
@@ -379,13 +412,12 @@ export function loadCompletedAchievementIds() {
 
 export function saveCompletedAchievementIds(ids) {
   if (typeof window === "undefined") return;
-  const unique = Array.from(new Set((Array.isArray(ids) ? ids : []).filter((id) => typeof id === "string")));
-  window.localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(unique));
+  window.localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(sanitizeCompletedAchievementIds(ids)));
 }
 
 export function addCompletedAchievementIds(newIds) {
   const current = loadCompletedAchievementIds();
-  const merged = Array.from(new Set([...current, ...(Array.isArray(newIds) ? newIds : [])]));
+  const merged = sanitizeCompletedAchievementIds([...current, ...(Array.isArray(newIds) ? newIds : [])]);
   saveCompletedAchievementIds(merged);
   return merged;
 }

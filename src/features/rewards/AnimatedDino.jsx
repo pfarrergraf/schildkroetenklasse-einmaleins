@@ -1,7 +1,14 @@
 import { DinoAnimation } from "../dinoAnimations";
 import { playDinoRewardSound } from "./dinoSound";
 
-export default function AnimatedDino({ reward, size = "large", celebrate = false, soundEnabled = true, onSoundPlayed }) {
+export default function AnimatedDino({
+  reward,
+  size = "large",
+  celebrate = false,
+  soundEnabled = true,
+  active = true,
+  onSoundPlayed,
+}) {
   if (!reward) return null;
 
   const photorealSize = size === "collection" ? "collection" : "card";
@@ -16,7 +23,7 @@ export default function AnimatedDino({ reward, size = "large", celebrate = false
   return (
     <div className={`animated-dino animated-dino-${size} dino-theme-${reward.theme} ${celebrate ? "celebrate" : ""}`}>
       {hasPhotorealAnimation ? (
-        <DinoAnimation speciesId={reward.speciesId} size={photorealSize} active className="animated-dino-photoreal" />
+        <DinoAnimation speciesId={reward.speciesId} size={photorealSize} active={active} className="animated-dino-photoreal" />
       ) : (
         <img
           src={reward.imagePath}

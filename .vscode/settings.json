@@ -1,0 +1,41 @@
+{
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/output/**": true,
+    "**/.archive/**": true,
+    "**/.tools/**": true,
+    "**/archive/**": true,
+    "**/assets/_original_backups/**": true,
+    "**/assets/dinos/dinosaur_videos/**": true,
+    "**/graphify-out/**": true,
+    "**/schildi-20-belohnungen-animation-pack/**": true,
+    "**/schildi-dino-assets-v2/**": true,
+    "**/schildi-photoreal-dino-animation-pack/**": true,
+    "**/schildi-real-render-series-only-v2/**": true,
+    "**/schildi-upgrade-modules/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/output": true,
+    "**/.archive": true,
+    "**/.tools": true,
+    "**/archive": true,
+    "**/graphify-out": true,
+    "**/schildi-20-belohnungen-animation-pack": true,
+    "**/schildi-dino-assets-v2": true,
+    "**/schildi-photoreal-dino-animation-pack": true,
+    "**/schildi-real-render-series-only-v2": true,
+    "**/schildi-upgrade-modules": true
+  },
+  "files.exclude": {
+    "**/dist": true,
+    "**/output": true,
+    "**/.archive": true,
+    "**/.tools": true,
+    "**/graphify-out": true
+  }
+}
