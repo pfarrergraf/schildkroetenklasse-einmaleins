@@ -994,6 +994,8 @@ h1 {
   color: #486257;
   background: #eff5ef;
   font-size: 1.22rem;
+  transition: transform 70ms ease, box-shadow 70ms ease, color 40ms linear;
+  touch-action: manipulation;
 }
 
 .table-button.active {

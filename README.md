@@ -25,6 +25,12 @@ npm install
 npm run dev
 ```
 
+Für die automatisierten Reward-Checks:
+
+```bash
+npm test
+```
+
 Dann genau diese URL öffnen:
 
 ```text
@@ -69,6 +75,37 @@ Neue Versionen sind später einfach:
 1. Änderungen committen
 2. nach `main` pushen
 3. GitHub Actions baut und veröffentlicht automatisch neu
+
+## Reward-Backends
+
+Die Reward-Pipeline läuft standardmäßig komplett lokal und offlinefähig im Browser. Dafür werden Freischaltungen, Bonus-Sterne, der Tabellen-Meilenstein, offene Belohnungen und ein kleines Event-Log in `localStorage` gehalten.
+
+Optional kann zusätzlich ein Remote-Reward-Backend aktiviert werden. Die App bleibt dabei local-first: wenn der Remote-Endpunkt fehlt, langsam ist oder offline nicht erreichbar ist, bleibt der lokale Zustand aktiv und spielbar.
+
+Konfiguration über `.env` oder die Hosting-Umgebung:
+
+```text
+VITE_REWARD_BACKEND_MODE=local
+VITE_REWARD_REMOTE_URL=https://example.com/api
+VITE_REWARD_REMOTE_TIMEOUT_MS=4000
+```
+
+Remote-Vertrag für den Frontend-Sync:
+
+- `GET <VITE_REWARD_REMOTE_URL>/reward-state`
+- `PUT <VITE_REWARD_REMOTE_URL>/reward-state`
+- Request- und Response-Body: `{ "rewardCheckpoint": { ... } }`
+
+Der Checkpoint enthält:
+
+- `unlockedRewardIds`
+- `bonusStars`
+- `rewardedTableCount`
+- `pendingRewardOffer`
+- `rewardEvents`
+- `updatedAt`
+
+Wichtige Garantie: selbst bei offenem, noch nicht ausgewähltem Reward geht nach Reload oder Fallback kein Reward mehr verloren. Offene Belohnungen werden persistent checkpointed und wieder aufgenommen.
 
 ## Hinweise zu Audio
 

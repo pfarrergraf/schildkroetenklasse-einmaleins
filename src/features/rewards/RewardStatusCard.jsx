@@ -1,12 +1,25 @@
 import { DINO_REWARDS } from "./rewardCatalog";
+import { ACHIEVEMENTS } from "./rewardLogic";
 
-export default function RewardStatusCard({ unlockedIds, bonusStars = 0, rewardedTableCount = 0, onOpenCollection }) {
+export default function RewardStatusCard({
+  unlockedIds,
+  bonusStars = 0,
+  completedAchievementIds = [],
+  backendStatusText = "",
+  hasPendingReward = false,
+  onOpenCollection,
+  onOpenPendingReward,
+  onOpenChallenges,
+}) {
   const unlockedCount = unlockedIds?.length ?? 0;
+  const completedCount = completedAchievementIds?.length ?? 0;
   const statusText =
-    bonusStars > 0
-      ? `${bonusStars} Bonus-Sterne`
-      : rewardedTableCount > 0
-        ? "Nächste Belohnung: 10 von 10 mit mehr aktiven Tafeln."
+    hasPendingReward
+      ? "Eine offene Belohnung wartet noch auf dich."
+      : bonusStars > 0
+      ? `${bonusStars} Bonus-Sterne gesammelt!`
+      : completedCount > 0
+        ? `${completedCount} von ${ACHIEVEMENTS.length} Herausforderungen geschafft.`
         : "Die erste Belohnung gibt es für 10 von 10.";
 
   return (
@@ -15,8 +28,17 @@ export default function RewardStatusCard({ unlockedIds, bonusStars = 0, rewarded
         <span>Dino-Sammlung</span>
         <strong>{unlockedCount}/{DINO_REWARDS.length}</strong>
         <p>{statusText}</p>
+        {backendStatusText ? <p>{backendStatusText}</p> : null}
       </div>
-      <button type="button" className="collection-open-button" onClick={onOpenCollection}>Meine Sammlung</button>
+      <div className="reward-status-actions">
+        {hasPendingReward ? (
+          <button type="button" className="collection-open-button" onClick={onOpenPendingReward}>Belohnung öffnen</button>
+        ) : null}
+        <button type="button" className="collection-open-button" onClick={onOpenCollection}>Meine Sammlung</button>
+        {onOpenChallenges ? (
+          <button type="button" className="collection-open-button challenge-open-button" onClick={onOpenChallenges}>Dino-Herausforderung</button>
+        ) : null}
+      </div>
     </div>
   );
 }

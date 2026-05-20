@@ -7,6 +7,7 @@
     "dev": "vite --host 0.0.0.0 --port 4173 --strictPort",
     "dev:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\dev-stop.ps1",
     "dev:restart": "npm run dev:stop && npm run dev",
+    "test": "node --test tests",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0"
   },

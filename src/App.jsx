@@ -2,15 +2,30 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   CollectionView,
   RewardChoiceModal,
+  RewardVideoModal,
   RewardStatusCard,
+  ChallengeModal,
   addBonusStar,
+  appendRewardEvent,
   buildRewardOffer,
+  clearPendingRewardOffer,
+  createDefaultRewardBackendStatus,
+  createRewardCheckpoint,
+  getRewardBackendStatusText,
+  hydrateRewardCheckpoint,
   loadBonusStars,
+  loadPendingRewardOffer,
   loadRewardedTableCount,
   loadUnlockedRewardIds,
+  loadCompletedAchievementIds,
+  addCompletedAchievementIds,
   playDinoRewardSound,
+  persistRewardCheckpoint,
   saveRewardedTableCount,
+  savePendingRewardOffer,
   shouldOfferReward,
+  checkNewAchievements,
+  ACHIEVEMENTS,
   unlockRewardId,
 } from "./features/rewards";
 import { loadLearningState, recordAnswerAttempt, recordRoundSummary } from "./features/learning";
@@ -37,6 +52,7 @@ const FINISH_STRONG_TEXT = "Fertig! Das war schildkrötenstark.";
 const FINISH_SOFT_TEXT = "Fertig! Noch eine Runde und wir werden stärker.";
 const INPUT_WARNING_TEXT = "Bitte eine Zahl von 0 bis 100 eingeben.";
 const WRONG_TEXT = "Probiere es noch einmal.";
+const DOUBLE_WRONG_TEXT = "Gu gu ga ga!";
 const AUDIO_BASE_URL = `${import.meta.env.BASE_URL}audio/`;
 const LIP_SYNC_SILENCE_FLOOR = 0.02;
 const LIP_SYNC_FULL_OPEN = 0.16;
@@ -168,6 +184,12 @@ const SPEECH_CUES = {
     scene: "sad",
     audioFiles: [`${AUDIO_BASE_URL}Probier%20es%20noch%20einmal.wav`],
   },
+  doubleWrong: {
+    id: "doubleWrong",
+    text: DOUBLE_WRONG_TEXT,
+    scene: "sad",
+    audioFiles: [`${AUDIO_BASE_URL}gugugaga.wav`],
+  },
   correctJa: {
     id: "correctJa",
     text: "Ja, gut gemacht!",
@@ -195,6 +217,7 @@ const SPEECH_CUES = {
 };
 
 const CORRECT_CUE_IDS = ["correctJa", "correctSuper", "correctKlasse", "correctStrong"];
+const INITIAL_PENDING_REWARD_OFFER = loadPendingRewardOffer();
 
 function createTask(selectedTables, previousTask) {
   const pool = selectedTables.length ? selectedTables : TABLES;
@@ -422,8 +445,11 @@ export default function App() {
   const [unlockedRewardIds, setUnlockedRewardIds] = useState(() => loadUnlockedRewardIds());
   const [bonusStars, setBonusStars] = useState(() => loadBonusStars());
   const [rewardedTableCount, setRewardedTableCount] = useState(() => loadRewardedTableCount());
-  const [rewardChoices, setRewardChoices] = useState([]);
+  const [pendingRewardOffer, setPendingRewardOffer] = useState(() => INITIAL_PENDING_REWARD_OFFER);
+  const [rewardModalOpen, setRewardModalOpen] = useState(() => Boolean(INITIAL_PENDING_REWARD_OFFER));
+  const [rewardBackendStatus, setRewardBackendStatus] = useState(() => createDefaultRewardBackendStatus());
   const [collectionOpen, setCollectionOpen] = useState(false);
+  const [videoReward, setVideoReward] = useState(null);
   const [learningState, setLearningState] = useState(() => loadLearningState());
   const [turtleScene, setTurtleScene] = useState("hello");
   const [turtleSpeech, setTurtleSpeech] = useState(START_TEXT);
@@ -436,6 +462,13 @@ export default function App() {
   const [keyboardEnabled, setKeyboardEnabled] = useState(() => getInitialKeyboardEnabled());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedMobileSection, setExpandedMobileSection] = useState(null);
+  const [consecutivePerfectRounds, setConsecutivePerfectRounds] = useState(0);
+  const [completedAchievementIds, setCompletedAchievementIds] = useState(() => loadCompletedAchievementIds());
+  const [challengeModalOpen, setChallengeModalOpen] = useState(false);
+  const [activeChallengeId, setActiveChallengeId] = useState(null);
+  const [showTableSelector, setShowTableSelector] = useState(false);
+  const [rewardTriggerTitle, setRewardTriggerTitle] = useState(null);
+  const skipTableToggleClickRef = useRef(null);
   const inputRef = useRef(null);
   const answerTimerRef = useRef(null);
   const frameTimerRef = useRef(null);
@@ -455,11 +488,13 @@ export default function App() {
   const flowTokenRef = useRef(0);
   const startCueUnlockedRef = useRef(false);
   const taskHadMistakeRef = useRef(false);
+  const consecutiveWrongAnswersRef = useRef(0);
 
   const progressPercent = useMemo(() => Math.round((round / ROUNDS_PER_GAME) * 100), [round]);
   const currentPraise = useMemo(() => encouragement(score, round), [score, round]);
   const currentScene = SCENES[turtleScene] ?? SCENES.hello;
   const currentFrame = currentScene.frames[frameIndex % currentScene.frames.length] ?? currentScene.frames[0];
+  const rewardBackendStatusText = useMemo(() => getRewardBackendStatusText(rewardBackendStatus), [rewardBackendStatus]);
   const audioStatusText =
     !soundEnabled
       ? "Ton ausgeschaltet"
@@ -484,6 +519,23 @@ export default function App() {
       window.clearTimeout(answerTimerRef.current);
       answerTimerRef.current = null;
     }
+  }
+
+  async function persistRewardState(overrides = {}, event = null) {
+    const rewardEvents = event ? appendRewardEvent(event) : createRewardCheckpoint().rewardEvents;
+    const { checkpoint, status } = await persistRewardCheckpoint(
+      createRewardCheckpoint({
+        unlockedRewardIds: overrides.unlockedRewardIds ?? unlockedRewardIds,
+        bonusStars: overrides.bonusStars ?? bonusStars,
+        rewardedTableCount: overrides.rewardedTableCount ?? rewardedTableCount,
+        pendingRewardOffer: overrides.pendingRewardOffer ?? pendingRewardOffer,
+        rewardEvents,
+        updatedAt: new Date().toISOString(),
+      })
+    );
+
+    setRewardBackendStatus(status);
+    return checkpoint;
   }
 
   function stopFrameLoop(resetFrame = false) {
@@ -832,6 +884,30 @@ export default function App() {
   }, [gameFinished, lastCueId, round, score]);
 
   useEffect(() => {
+    let ignore = false;
+
+    async function hydrateRewardState() {
+      const { checkpoint, status } = await hydrateRewardCheckpoint();
+      if (ignore) {
+        return;
+      }
+
+      setUnlockedRewardIds(checkpoint.unlockedRewardIds);
+      setBonusStars(checkpoint.bonusStars);
+      setRewardedTableCount(checkpoint.rewardedTableCount);
+      setPendingRewardOffer(checkpoint.pendingRewardOffer);
+      setRewardModalOpen(Boolean(checkpoint.pendingRewardOffer?.choices?.length));
+      setRewardBackendStatus(status);
+    }
+
+    void hydrateRewardState();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
     window.render_game_to_text = () =>
       JSON.stringify({
         mode: gameFinished ? "finish" : "play",
@@ -854,6 +930,10 @@ export default function App() {
         speaking: isSpeaking,
         lastSpeechMode,
         lastCueId,
+        rewardBackendMode: rewardBackendStatus.activeMode,
+        rewardBackendTransport: rewardBackendStatus.transport,
+        rewardPendingOfferId: pendingRewardOffer?.offerId ?? null,
+        rewardPendingChoices: pendingRewardOffer?.choiceIds ?? [],
         lipSyncLevel: Number(lipSyncLevelRef.current.toFixed(3)),
         lipSyncDriver: lipSyncDriverRef.current,
         audioCurrentTime: Number((audioRef.current?.currentTime || 0).toFixed(3)),
@@ -871,7 +951,10 @@ export default function App() {
     isSpeaking,
     lastCueId,
     lastSpeechMode,
+    pendingRewardOffer,
     round,
+    rewardBackendStatus.activeMode,
+    rewardBackendStatus.transport,
     score,
     selectedTables,
     soundEnabled,
@@ -990,6 +1073,21 @@ export default function App() {
     });
   }
 
+  function handleTableTogglePointerDown(event, number) {
+    event.preventDefault();
+    skipTableToggleClickRef.current = number;
+    toggleTable(number);
+  }
+
+  function handleTableToggleClick(number) {
+    if (skipTableToggleClickRef.current === number) {
+      skipTableToggleClickRef.current = null;
+      return;
+    }
+
+    toggleTable(number);
+  }
+
   function nextTask() {
     flowTokenRef.current += 1;
     const next = createTask(selectedTables, task);
@@ -1005,6 +1103,8 @@ export default function App() {
     const strongFinish = finalScore >= 7;
     const currentUnlockedRewardIds = loadUnlockedRewardIds();
     const currentRewardedTableCount = loadRewardedTableCount();
+    const currentPendingRewardOffer = loadPendingRewardOffer();
+    let rewardSummary = { type: "none" };
 
     setGameFinished(true);
     setFeedback(`Fertig! Du hast ${finalScore} von ${ROUNDS_PER_GAME} Aufgaben richtig gelöst.`);
@@ -1014,34 +1114,92 @@ export default function App() {
       window.localStorage.setItem(STORAGE_KEY, String(finalScore));
     }
 
+    if (currentPendingRewardOffer) {
+      setPendingRewardOffer(currentPendingRewardOffer);
+      setRewardModalOpen(true);
+      rewardSummary = {
+        type: "pending-offer-resumed",
+        offerId: currentPendingRewardOffer.offerId,
+      };
+    } else {
+      const nextConsecutivePerfect = finalScore === ROUNDS_PER_GAME ? consecutivePerfectRounds + 1 : 0;
+      setConsecutivePerfectRounds(nextConsecutivePerfect);
+
+      const currentCompletedIds = loadCompletedAchievementIds();
+      const newAchievements = checkNewAchievements({
+        finalScore,
+        totalRounds: ROUNDS_PER_GAME,
+        selectedTables,
+        consecutivePerfect: nextConsecutivePerfect,
+        completedIds: currentCompletedIds,
+      });
+
+      if (newAchievements.length > 0) {
+        const nextCompletedIds = addCompletedAchievementIds(newAchievements.map((a) => a.id));
+        setCompletedAchievementIds(nextCompletedIds);
+
+        const titleForModal = newAchievements[0]?.title ?? null;
+        setRewardTriggerTitle(titleForModal);
+
+        const offer = buildRewardOffer(currentUnlockedRewardIds, {
+          seed: `${selectedTables.join("-")}|${currentUnlockedRewardIds.join("-")}|${currentCompletedIds.length}|${finalScore}`,
+        });
+        if (offer.allCollected) {
+          const nextBonusStars = addBonusStar();
+          setBonusStars(nextBonusStars);
+          rewardSummary = {
+            type: "bonus-star-awarded",
+            totalBonusStars: nextBonusStars,
+          };
+          void persistRewardState(
+            { bonusStars: nextBonusStars },
+            {
+              type: "bonus-star-awarded",
+              createdAt: new Date().toISOString(),
+              data: { totalBonusStars: nextBonusStars, selectedTableCount: selectedTables.length },
+            }
+          );
+        } else {
+          const nextPendingRewardOffer = savePendingRewardOffer({
+            offerId: `reward-offer-${Date.now()}`,
+            choiceIds: offer.choices.map((reward) => reward.id),
+            createdAt: new Date().toISOString(),
+            selectedTableCount: selectedTables.length,
+          });
+          setPendingRewardOffer(nextPendingRewardOffer);
+          setRewardModalOpen(Boolean(nextPendingRewardOffer));
+          rewardSummary = {
+            type: "offer-created",
+            offerId: nextPendingRewardOffer?.offerId ?? null,
+            choiceIds: nextPendingRewardOffer?.choiceIds ?? [],
+          };
+          void persistRewardState(
+            { pendingRewardOffer: nextPendingRewardOffer },
+            {
+              type: "reward-offer-created",
+              createdAt: new Date().toISOString(),
+              data: {
+                offerId: nextPendingRewardOffer?.offerId ?? null,
+                choiceIds: nextPendingRewardOffer?.choiceIds ?? [],
+                achievementIds: newAchievements.map((a) => a.id),
+                selectedTableCount: selectedTables.length,
+              },
+            }
+          );
+        }
+      } else {
+        setConsecutivePerfectRounds(nextConsecutivePerfect);
+      }
+    }
+
     setLearningState((current) =>
       recordRoundSummary(current, {
         score: finalScore,
         totalRounds: ROUNDS_PER_GAME,
         selectedTables,
+        reward: rewardSummary,
       })
     );
-
-    if (
-      shouldOfferReward({
-        finalScore,
-        totalRounds: ROUNDS_PER_GAME,
-        selectedTableCount: selectedTables.length,
-        rewardedTableCount: currentRewardedTableCount,
-      })
-    ) {
-      const nextRewardedTableCount = saveRewardedTableCount(
-        Math.max(currentRewardedTableCount, selectedTables.length)
-      );
-      setRewardedTableCount(nextRewardedTableCount);
-
-      const offer = buildRewardOffer(currentUnlockedRewardIds);
-      if (offer.allCollected) {
-        setBonusStars(addBonusStar());
-      } else {
-        setRewardChoices(offer.choices);
-      }
-    }
 
     await playCue(strongFinish ? "finishStrong" : "finishSoft");
 
@@ -1068,7 +1226,6 @@ export default function App() {
     const flowToken = flowTokenRef.current + 1;
     flowTokenRef.current = flowToken;
     const isCorrect = number === task.answer;
-    const cueId = isCorrect ? randomCorrectCueId() : "wrong";
 
     setLearningState((current) =>
       recordAnswerAttempt(current, {
@@ -1084,10 +1241,12 @@ export default function App() {
     setLastWasCorrect(isCorrect);
 
     if (!isCorrect) {
+      consecutiveWrongAnswersRef.current += 1;
       taskHadMistakeRef.current = true;
       setStreak(0);
       setTypedAnswer("");
       setFeedback(WRONG_TEXT);
+      const cueId = consecutiveWrongAnswersRef.current >= 2 ? "doubleWrong" : "wrong";
       await playCue(cueId);
 
       if (flowTokenRef.current !== flowToken) {
@@ -1098,6 +1257,7 @@ export default function App() {
       return;
     }
 
+    consecutiveWrongAnswersRef.current = 0;
     const solvedWithoutMistake = !taskHadMistakeRef.current;
     const nextRound = round + 1;
     const nextScore = score + (solvedWithoutMistake ? 1 : 0);
@@ -1106,6 +1266,7 @@ export default function App() {
     setScore(nextScore);
     setStreak(solvedWithoutMistake ? streak + 1 : 0);
     setFeedback("Richtig gerechnet. Schildi freut sich mit dir.");
+    const cueId = randomCorrectCueId();
     await playCue(cueId);
 
     if (flowTokenRef.current !== flowToken) {
@@ -1170,20 +1331,88 @@ export default function App() {
     setFrameIndex(0);
     setMobileMenuOpen(false);
     setExpandedMobileSection(null);
-    setRewardChoices([]);
+    setRewardModalOpen(false);
     setCollectionOpen(false);
+    setVideoReward(null);
+    setChallengeModalOpen(false);
+    setShowTableSelector(false);
     taskHadMistakeRef.current = false;
+    consecutiveWrongAnswersRef.current = 0;
     frameStepRef.current = 0;
   }
 
   async function handleRewardChoose(reward) {
     const nextIds = unlockRewardId(reward.id);
     setUnlockedRewardIds(nextIds);
-    setCollectionOpen(true);
-    setRewardChoices([]);
+    clearPendingRewardOffer();
+    setPendingRewardOffer(null);
+    setRewardModalOpen(false);
     setFeedback(reward.unlockText ?? `${reward.name} gehört jetzt zu deiner Sammlung.`);
     stopCurrentAudio();
+
+    if (reward.videoPath) {
+      setVideoReward(reward);
+      void persistRewardState(
+        {
+          unlockedRewardIds: nextIds,
+          pendingRewardOffer: null,
+        },
+        {
+          type: "reward-claimed",
+          createdAt: new Date().toISOString(),
+          data: {
+            rewardId: reward.id,
+            via: "video",
+          },
+        }
+      );
+      return;
+    }
+
+    setCollectionOpen(true);
     await playDinoRewardSound(reward, { soundEnabled });
+    await persistRewardState(
+      {
+        unlockedRewardIds: nextIds,
+        pendingRewardOffer: null,
+      },
+      {
+        type: "reward-claimed",
+        createdAt: new Date().toISOString(),
+        data: {
+          rewardId: reward.id,
+          via: "sound-only",
+        },
+      }
+    );
+  }
+
+  function handleRewardVideoClose() {
+    setVideoReward(null);
+    setCollectionOpen(true);
+  }
+
+  function openPendingRewardOffer() {
+    if (pendingRewardOffer?.choices?.length) {
+      setRewardModalOpen(true);
+    }
+  }
+
+  function handleChallengeAccept(challenge, tables) {
+    setChallengeModalOpen(false);
+    setMobileMenuOpen(false);
+    setActiveChallengeId(challenge.id);
+    // resetGame first, then override state so React batches correctly
+    resetGame();
+    setTurtleSpeech(challenge.schildiText);
+    setTurtleScene("hello");
+    if (tables && tables.length > 0) {
+      const sanitized = tables.filter((t) => t >= 0 && t <= 10).sort((a, b) => a - b);
+      if (sanitized.length > 0) {
+        saveSelectedTables(sanitized);
+        setSelectedTables(sanitized);
+      }
+    }
   }
 
   function replayCurrentCue() {
@@ -1295,7 +1524,55 @@ export default function App() {
                     ? "Klasse Ergebnis. Du kannst jetzt dieselben Tafeln noch einmal sicher üben oder neue dazunehmen."
                     : "Gute Übung. Starte gern direkt noch eine ruhige nächste Runde."}
                 </span>
-                <button type="button" onClick={resetGame} className="submit-button">Noch einmal spielen</button>
+
+                {showTableSelector ? (
+                  <div className="finish-table-selector">
+                    <p className="finish-table-label">Welche Reihen möchtest du üben?</p>
+                    <div className="table-grid finish-table-grid">
+                      {TABLES.map((number) => {
+                        const active = selectedTables.includes(number);
+                        return (
+                          <button
+                            key={`finish-${number}`}
+                            type="button"
+                            onPointerDown={(e) => handleTableTogglePointerDown(e, number)}
+                            onClick={() => handleTableToggleClick(number)}
+                            className={active ? "table-button active" : "table-button"}
+                            aria-pressed={active}
+                          >
+                            {number}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button
+                      type="button"
+                      className="secondary-button finish-table-done"
+                      onClick={() => setShowTableSelector(false)}
+                    >
+                      Fertig
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="table-switch-hint"
+                    onClick={() => setShowTableSelector(true)}
+                  >
+                    Andere Reihen ausprobieren?
+                  </button>
+                )}
+
+                <div className="finish-card-actions">
+                  <button type="button" onClick={resetGame} className="submit-button">Noch einmal spielen</button>
+                  <button
+                    type="button"
+                    className="challenge-open-hint"
+                    onClick={() => setChallengeModalOpen(true)}
+                  >
+                    🦕 Dino-Herausforderung
+                  </button>
+                </div>
               </div>
             )}
           </section>
@@ -1345,7 +1622,8 @@ export default function App() {
                       <button
                         key={`mobile-${number}`}
                         type="button"
-                        onClick={() => toggleTable(number)}
+                        onPointerDown={(event) => handleTableTogglePointerDown(event, number)}
+                        onClick={() => handleTableToggleClick(number)}
                         disabled={round > 0 && !gameFinished}
                         className={active ? "table-button active" : "table-button"}
                         aria-pressed={active}
@@ -1419,8 +1697,12 @@ export default function App() {
                 <RewardStatusCard
                   unlockedIds={unlockedRewardIds}
                   bonusStars={bonusStars}
-                  rewardedTableCount={rewardedTableCount}
+                  completedAchievementIds={completedAchievementIds}
+                  backendStatusText={rewardBackendStatusText}
+                  hasPendingReward={Boolean(pendingRewardOffer?.choices?.length)}
                   onOpenCollection={() => setCollectionOpen(true)}
+                  onOpenPendingReward={openPendingRewardOffer}
+                  onOpenChallenges={() => { setChallengeModalOpen(true); setMobileMenuOpen(false); }}
                 />
                 <div className="mobile-feedback-card">
                   <span>Hinweis</span>
@@ -1485,6 +1767,16 @@ export default function App() {
           <section className="mobile-utility-section">
             <button
               type="button"
+              className="mobile-section-toggle challenge-menu-button"
+              onClick={() => { setChallengeModalOpen(true); setMobileMenuOpen(false); }}
+            >
+              🦕 Dino-Herausforderung
+            </button>
+          </section>
+
+          <section className="mobile-utility-section">
+            <button
+              type="button"
               className={expandedMobileSection === "actions" ? "mobile-section-toggle active" : "mobile-section-toggle"}
               onClick={() => toggleMobileSection("actions")}
               aria-expanded={expandedMobileSection === "actions"}
@@ -1513,11 +1805,14 @@ export default function App() {
         </aside>
 
         <RewardChoiceModal
-          choices={rewardChoices}
+          choices={rewardModalOpen ? pendingRewardOffer?.choices ?? [] : []}
           onChoose={handleRewardChoose}
-          onClose={() => setRewardChoices([])}
+          onClose={() => setRewardModalOpen(false)}
           soundEnabled={soundEnabled}
+          achievementTitle={rewardTriggerTitle}
         />
+
+        <RewardVideoModal reward={videoReward} onClose={handleRewardVideoClose} soundEnabled={soundEnabled} />
 
         {collectionOpen ? (
           <div className="reward-modal-backdrop" role="presentation">
@@ -1528,6 +1823,14 @@ export default function App() {
               soundEnabled={soundEnabled}
             />
           </div>
+        ) : null}
+
+        {challengeModalOpen ? (
+          <ChallengeModal
+            completedIds={completedAchievementIds}
+            onAccept={handleChallengeAccept}
+            onClose={() => setChallengeModalOpen(false)}
+          />
         ) : null}
       </section>
     </main>

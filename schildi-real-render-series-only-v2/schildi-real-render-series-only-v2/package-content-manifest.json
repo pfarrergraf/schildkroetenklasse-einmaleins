@@ -1,0 +1,42 @@
+{
+  "package": "schildi-real-render-series-only-v2",
+  "noPlaceholders": true,
+  "readyRewards": [
+    {
+      "speciesId": "brachiosaurus-altithorax",
+      "rewardId": "bruno-brachio",
+      "displayName": "Bruno Brachio",
+      "germanName": "Brachiosaurus",
+      "scientificName": "Brachiosaurus altithorax",
+      "frameCount": 6,
+      "assetFolder": "assets/rewards/prehistoric/brachiosaurus-altithorax",
+      "motion": "gentle-breathe",
+      "sourceType": "realistic-render-cutout-from-existing-chat-render",
+      "noPlaceholder": true
+    },
+    {
+      "speciesId": "triceratops-horridus",
+      "rewardId": "trixi-triceratops",
+      "displayName": "Trixi Triceratops",
+      "germanName": "Triceratops",
+      "scientificName": "Triceratops horridus",
+      "frameCount": 6,
+      "assetFolder": "assets/rewards/prehistoric/triceratops-horridus",
+      "motion": "steady-stomp",
+      "sourceType": "realistic-render-cutout-from-existing-chat-render",
+      "noPlaceholder": true
+    },
+    {
+      "speciesId": "pteranodon-longiceps",
+      "rewardId": "pico-pteranodon",
+      "displayName": "Pico Pteranodon",
+      "germanName": "Pteranodon",
+      "scientificName": "Pteranodon longiceps",
+      "frameCount": 6,
+      "assetFolder": "assets/rewards/prehistoric/pteranodon-longiceps",
+      "motion": "wing-float",
+      "sourceType": "realistic-render-cutout-from-existing-chat-render",
+      "noPlaceholder": true
+    }
+  ]
+}

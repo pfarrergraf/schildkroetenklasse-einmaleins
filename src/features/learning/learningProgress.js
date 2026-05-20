@@ -98,7 +98,7 @@ export function recordAnswerAttempt(learningState, { a, b, givenAnswer, correctA
   });
 }
 
-export function recordRoundSummary(learningState, { score, totalRounds, selectedTables }) {
+export function recordRoundSummary(learningState, { score, totalRounds, selectedTables, reward = null }) {
   const date = todayKey();
   const today = learningState?.dailyPractice?.[date] ?? { attempts: 0, correct: 0, rounds: 0 };
 
@@ -110,6 +110,7 @@ export function recordRoundSummary(learningState, { score, totalRounds, selected
         score,
         totalRounds,
         selectedTables,
+        reward,
         perfect: score === totalRounds,
         createdAt: new Date().toISOString(),
       },

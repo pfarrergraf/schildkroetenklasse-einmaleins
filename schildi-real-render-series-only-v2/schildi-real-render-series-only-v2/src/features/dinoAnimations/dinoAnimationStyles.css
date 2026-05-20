@@ -1,0 +1,81 @@
+.dino-animation {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  margin: 0;
+  user-select: none;
+}
+
+.dino-animation-frame {
+  display: block;
+  width: min(100%, 340px);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 18px rgba(26, 45, 33, 0.18));
+  transform-origin: 50% 78%;
+}
+
+.dino-animation.size-card .dino-animation-frame {
+  max-height: 230px;
+}
+
+.dino-animation.size-collection .dino-animation-frame {
+  max-height: 155px;
+}
+
+.dino-animation.size-hero .dino-animation-frame {
+  max-height: 360px;
+}
+
+.dino-animation.motion-gentle-breathe .dino-animation-frame {
+  animation: dinoRealBreathe 2.2s ease-in-out infinite;
+}
+
+.dino-animation.motion-steady-stomp .dino-animation-frame {
+  animation: dinoRealStomp 1.15s ease-in-out infinite;
+}
+
+.dino-animation.motion-wing-float .dino-animation-frame {
+  animation: dinoRealFloat 1.55s ease-in-out infinite;
+}
+
+.dino-animation-caption {
+  margin-top: 0.35rem;
+  text-align: center;
+  color: #173028;
+}
+
+.dino-animation-caption strong,
+.dino-animation-caption span {
+  display: block;
+}
+
+.dino-animation-caption span {
+  font-size: 0.78rem;
+  color: rgba(23, 48, 40, 0.68);
+  font-style: italic;
+}
+
+@keyframes dinoRealBreathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-5px) scale(1.018); }
+}
+
+@keyframes dinoRealStomp {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  30% { transform: translateY(-5px) rotate(-0.8deg); }
+  55% { transform: translateY(3px) rotate(0deg) scale(1.012); }
+  75% { transform: translateY(-2px) rotate(0.8deg); }
+}
+
+@keyframes dinoRealFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  35% { transform: translateY(-9px) rotate(-0.9deg); }
+  65% { transform: translateY(-14px) rotate(0.9deg) scale(1.018); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dino-animation-frame {
+    animation: none !important;
+  }
+}
