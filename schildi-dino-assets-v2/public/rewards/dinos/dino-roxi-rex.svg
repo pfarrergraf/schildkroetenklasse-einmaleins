@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" role="img" aria-labelledby="title desc">
+<title>Roxi Rex</title><desc>A cheerful small T-Rex with tiny arms.</desc>
+<style>.shadow{fill:#eadbd5;opacity:.7}.body{fill:#ea6a50}.belly{fill:#ffd9a3}.dark{fill:#b54032}.eye{fill:#fff}.pupil{fill:#173028}.tooth{fill:#fff4c1}.line{fill:none;stroke:#173028;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}.leg{fill:#d95a44}.nail{fill:#fff0b7}.spot{fill:#b54032;opacity:.36}#head{transform-origin:205px 92px;animation:rexChomp 1.1s ease-in-out infinite}#tail{transform-origin:78px 145px;animation:rexTail 1.3s ease-in-out infinite}@keyframes rexChomp{0%,100%{transform:rotate(0)}50%{transform:rotate(-4deg) translateY(-3px)}}@keyframes rexTail{0%,100%{transform:rotate(0)}50%{transform:rotate(-10deg)}}</style>
+<ellipse class="shadow" cx="155" cy="211" rx="100" ry="17"/>
+<path id="tail" class="body" d="M92 137 C52 112 26 113 10 129 C45 140 64 159 92 174 Z"/>
+<ellipse class="body" cx="143" cy="145" rx="68" ry="55"/>
+<ellipse class="belly" cx="151" cy="154" rx="35" ry="34"/>
+<g id="head"><path class="body" d="M183 90 C190 57 232 46 263 63 C294 81 292 121 264 139 C226 164 174 136 183 90 Z"/><path class="body" d="M239 119 C270 119 289 132 295 148 C270 153 248 148 232 136 Z"/><circle class="eye" cx="219" cy="87" r="10"/><circle class="eye" cx="248" cy="88" r="10"/><circle class="pupil" cx="220" cy="88" r="4"/><circle class="pupil" cx="246" cy="89" r="4"/><path class="line" d="M211 119 C226 130 252 130 272 118"/><path class="tooth" d="M225 128 L231 143 L237 128 Z"/><path class="tooth" d="M250 128 L256 143 L262 128 Z"/></g>
+<path class="body" d="M111 136 C85 142 77 157 83 170 C101 161 115 158 129 158 Z"/><path class="body" d="M178 134 C202 138 211 151 207 164 C188 158 176 155 163 155 Z"/>
+<circle class="spot" cx="121" cy="109" r="8"/><circle class="spot" cx="146" cy="102" r="6"/><circle class="spot" cx="171" cy="124" r="6"/>
+<path class="leg" d="M94 166 L83 206 L116 206 L122 163 Z"/><path class="leg" d="M153 170 L154 209 L188 209 L183 166 Z"/>
+<ellipse class="nail" cx="92" cy="207" rx="7" ry="5"/><ellipse class="nail" cx="106" cy="207" rx="7" ry="5"/><ellipse class="nail" cx="160" cy="210" rx="7" ry="5"/><ellipse class="nail" cx="177" cy="210" rx="7" ry="5"/>
+</svg>

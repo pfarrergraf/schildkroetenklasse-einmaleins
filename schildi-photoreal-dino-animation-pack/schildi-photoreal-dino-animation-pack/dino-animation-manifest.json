@@ -1,0 +1,53 @@
+[
+  {
+    "id": "brachiosaurus-altithorax",
+    "rewardId": "bruno-bronto",
+    "name": "Bruno Bronto",
+    "scientificName": "Brachiosaurus altithorax",
+    "germanName": "Brachiosaurus",
+    "subtitle": "Der ruhige Langhals",
+    "anim": "gentle-walk",
+    "frames": [
+      "assets/dinos/brachiosaurus-altithorax/frame_01_01_idle.png",
+      "assets/dinos/brachiosaurus-altithorax/frame_02_02_lift.png",
+      "assets/dinos/brachiosaurus-altithorax/frame_03_03_left.png",
+      "assets/dinos/brachiosaurus-altithorax/frame_04_04_emphasis.png",
+      "assets/dinos/brachiosaurus-altithorax/frame_05_05_right.png",
+      "assets/dinos/brachiosaurus-altithorax/frame_06_06_settle.png"
+    ]
+  },
+  {
+    "id": "triceratops-horridus",
+    "rewardId": "trixi-triceratops",
+    "name": "Trixi Triceratops",
+    "scientificName": "Triceratops horridus",
+    "germanName": "Triceratops",
+    "subtitle": "Das freundliche Dreihorn",
+    "anim": "stomp",
+    "frames": [
+      "assets/dinos/triceratops-horridus/frame_01_01_idle.png",
+      "assets/dinos/triceratops-horridus/frame_02_02_lift.png",
+      "assets/dinos/triceratops-horridus/frame_03_03_left.png",
+      "assets/dinos/triceratops-horridus/frame_04_04_emphasis.png",
+      "assets/dinos/triceratops-horridus/frame_05_05_right.png",
+      "assets/dinos/triceratops-horridus/frame_06_06_settle.png"
+    ]
+  },
+  {
+    "id": "pteranodon-longiceps",
+    "rewardId": "pico-pteranodon",
+    "name": "Pico Pteranodon",
+    "scientificName": "Pteranodon longiceps",
+    "germanName": "Pteranodon",
+    "subtitle": "Der elegante Flugsaurier",
+    "anim": "wing-float",
+    "frames": [
+      "assets/dinos/pteranodon-longiceps/frame_01_01_idle.png",
+      "assets/dinos/pteranodon-longiceps/frame_02_02_lift.png",
+      "assets/dinos/pteranodon-longiceps/frame_03_03_left.png",
+      "assets/dinos/pteranodon-longiceps/frame_04_04_emphasis.png",
+      "assets/dinos/pteranodon-longiceps/frame_05_05_right.png",
+      "assets/dinos/pteranodon-longiceps/frame_06_06_settle.png"
+    ]
+  }
+]

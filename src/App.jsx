@@ -1,4 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  CollectionView,
+  RewardChoiceModal,
+  RewardStatusCard,
+  addBonusStar,
+  buildRewardOffer,
+  loadBonusStars,
+  loadRewardedTableCount,
+  loadUnlockedRewardIds,
+  playDinoRewardSound,
+  saveRewardedTableCount,
+  shouldOfferReward,
+  unlockRewardId,
+} from "./features/rewards";
+import { loadLearningState, recordAnswerAttempt, recordRoundSummary } from "./features/learning";
+import "./features/rewards/dinoRewardStyles.css";
+import "./features/learning/learningStyles.css";
 import halloImage from "../assets/Hallo.png";
 import happyImage from "../assets/gut.png";
 import sadImage from "../assets/schlecht.png";
@@ -12,6 +29,7 @@ const warningFrameModules = import.meta.glob("../assets/Achtung/*.png", { eager:
 const TABLES = Array.from({ length: 11 }, (_, i) => i);
 const ROUNDS_PER_GAME = 10;
 const STORAGE_KEY = "schildkroetenklasse-einmaleins-bestscore";
+const SELECTED_TABLES_STORAGE_KEY = "schildkroetenklasse-selected-tables-v1";
 const DEFAULT_TABLES = [1, 2, 5, 10];
 const START_TEXT = "Hallo Schildkrötenklasse! Ich bin Schildi und übe mit dir.";
 const READY_TEXT = "Ich bin bereit für die nächste Aufgabe.";
@@ -355,9 +373,43 @@ function getInitialKeyboardEnabled() {
   return !window.matchMedia("(max-width: 860px) and (pointer: coarse)").matches;
 }
 
+function sanitizeSelectedTables(value) {
+  if (!Array.isArray(value)) {
+    return DEFAULT_TABLES;
+  }
+
+  const normalized = value
+    .map((entry) => Number(entry))
+    .filter((entry, index, array) => Number.isInteger(entry) && entry >= 0 && entry <= 10 && array.indexOf(entry) === index)
+    .sort((left, right) => left - right);
+
+  return normalized.length > 0 ? normalized : DEFAULT_TABLES;
+}
+
+function loadSelectedTables() {
+  if (typeof window === "undefined") {
+    return DEFAULT_TABLES;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(SELECTED_TABLES_STORAGE_KEY);
+    return raw ? sanitizeSelectedTables(JSON.parse(raw)) : DEFAULT_TABLES;
+  } catch {
+    return DEFAULT_TABLES;
+  }
+}
+
+function saveSelectedTables(selectedTables) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(SELECTED_TABLES_STORAGE_KEY, JSON.stringify(sanitizeSelectedTables(selectedTables)));
+}
+
 export default function App() {
-  const [selectedTables, setSelectedTables] = useState(DEFAULT_TABLES);
-  const [task, setTask] = useState(() => createTask(DEFAULT_TABLES));
+  const [selectedTables, setSelectedTables] = useState(() => loadSelectedTables());
+  const [task, setTask] = useState(() => createTask(loadSelectedTables()));
   const [options, setOptions] = useState(() => createOptions(task.answer));
   const [typedAnswer, setTypedAnswer] = useState("");
   const [score, setScore] = useState(0);
@@ -367,6 +419,12 @@ export default function App() {
   const [lastWasCorrect, setLastWasCorrect] = useState(null);
   const [gameFinished, setGameFinished] = useState(false);
   const [bestScore, setBestScore] = useState(0);
+  const [unlockedRewardIds, setUnlockedRewardIds] = useState(() => loadUnlockedRewardIds());
+  const [bonusStars, setBonusStars] = useState(() => loadBonusStars());
+  const [rewardedTableCount, setRewardedTableCount] = useState(() => loadRewardedTableCount());
+  const [rewardChoices, setRewardChoices] = useState([]);
+  const [collectionOpen, setCollectionOpen] = useState(false);
+  const [learningState, setLearningState] = useState(() => loadLearningState());
   const [turtleScene, setTurtleScene] = useState("hello");
   const [turtleSpeech, setTurtleSpeech] = useState(START_TEXT);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -396,6 +454,7 @@ export default function App() {
   const playbackCancelRef = useRef(null);
   const flowTokenRef = useRef(0);
   const startCueUnlockedRef = useRef(false);
+  const taskHadMistakeRef = useRef(false);
 
   const progressPercent = useMemo(() => Math.round((round / ROUNDS_PER_GAME) * 100), [round]);
   const currentPraise = useMemo(() => encouragement(score, round), [score, round]);
@@ -920,16 +979,21 @@ export default function App() {
     setSelectedTables((current) => {
       if (current.includes(number)) {
         const next = current.filter((item) => item !== number);
-        return next.length ? next : current;
+        const resolved = next.length ? next : current;
+        saveSelectedTables(resolved);
+        return resolved;
       }
 
-      return [...current, number].sort((a, b) => a - b);
+      const next = [...current, number].sort((a, b) => a - b);
+      saveSelectedTables(next);
+      return next;
     });
   }
 
   function nextTask() {
     flowTokenRef.current += 1;
     const next = createTask(selectedTables, task);
+    taskHadMistakeRef.current = false;
     setTask(next);
     setOptions(createOptions(next.answer));
     setTypedAnswer("");
@@ -939,6 +1003,8 @@ export default function App() {
 
   async function finishGame(finalScore, flowToken) {
     const strongFinish = finalScore >= 7;
+    const currentUnlockedRewardIds = loadUnlockedRewardIds();
+    const currentRewardedTableCount = loadRewardedTableCount();
 
     setGameFinished(true);
     setFeedback(`Fertig! Du hast ${finalScore} von ${ROUNDS_PER_GAME} Aufgaben richtig gelöst.`);
@@ -946,6 +1012,35 @@ export default function App() {
     if (finalScore > bestScore) {
       setBestScore(finalScore);
       window.localStorage.setItem(STORAGE_KEY, String(finalScore));
+    }
+
+    setLearningState((current) =>
+      recordRoundSummary(current, {
+        score: finalScore,
+        totalRounds: ROUNDS_PER_GAME,
+        selectedTables,
+      })
+    );
+
+    if (
+      shouldOfferReward({
+        finalScore,
+        totalRounds: ROUNDS_PER_GAME,
+        selectedTableCount: selectedTables.length,
+        rewardedTableCount: currentRewardedTableCount,
+      })
+    ) {
+      const nextRewardedTableCount = saveRewardedTableCount(
+        Math.max(currentRewardedTableCount, selectedTables.length)
+      );
+      setRewardedTableCount(nextRewardedTableCount);
+
+      const offer = buildRewardOffer(currentUnlockedRewardIds);
+      if (offer.allCollected) {
+        setBonusStars(addBonusStar());
+      } else {
+        setRewardChoices(offer.choices);
+      }
     }
 
     await playCue(strongFinish ? "finishStrong" : "finishSoft");
@@ -975,10 +1070,21 @@ export default function App() {
     const isCorrect = number === task.answer;
     const cueId = isCorrect ? randomCorrectCueId() : "wrong";
 
+    setLearningState((current) =>
+      recordAnswerAttempt(current, {
+        a: task.a,
+        b: task.b,
+        givenAnswer: number,
+        correctAnswer: task.answer,
+        isCorrect,
+      })
+    );
+
     setIsChecking(true);
     setLastWasCorrect(isCorrect);
 
     if (!isCorrect) {
+      taskHadMistakeRef.current = true;
       setStreak(0);
       setTypedAnswer("");
       setFeedback(WRONG_TEXT);
@@ -992,12 +1098,13 @@ export default function App() {
       return;
     }
 
+    const solvedWithoutMistake = !taskHadMistakeRef.current;
     const nextRound = round + 1;
-    const nextScore = score + 1;
+    const nextScore = score + (solvedWithoutMistake ? 1 : 0);
 
     setRound(nextRound);
     setScore(nextScore);
-    setStreak(streak + 1);
+    setStreak(solvedWithoutMistake ? streak + 1 : 0);
     setFeedback("Richtig gerechnet. Schildi freut sich mit dir.");
     await playCue(cueId);
 
@@ -1024,6 +1131,7 @@ export default function App() {
     }
 
     const next = createTask(selectedTables, task);
+    taskHadMistakeRef.current = false;
     setTask(next);
     setOptions(createOptions(next.answer));
     setTypedAnswer("");
@@ -1062,7 +1170,20 @@ export default function App() {
     setFrameIndex(0);
     setMobileMenuOpen(false);
     setExpandedMobileSection(null);
+    setRewardChoices([]);
+    setCollectionOpen(false);
+    taskHadMistakeRef.current = false;
     frameStepRef.current = 0;
+  }
+
+  async function handleRewardChoose(reward) {
+    const nextIds = unlockRewardId(reward.id);
+    setUnlockedRewardIds(nextIds);
+    setCollectionOpen(true);
+    setRewardChoices([]);
+    setFeedback(reward.unlockText ?? `${reward.name} gehört jetzt zu deiner Sammlung.`);
+    stopCurrentAudio();
+    await playDinoRewardSound(reward, { soundEnabled });
   }
 
   function replayCurrentCue() {
@@ -1295,6 +1416,12 @@ export default function App() {
                     <strong>{streak}</strong>
                   </div>
                 </div>
+                <RewardStatusCard
+                  unlockedIds={unlockedRewardIds}
+                  bonusStars={bonusStars}
+                  rewardedTableCount={rewardedTableCount}
+                  onOpenCollection={() => setCollectionOpen(true)}
+                />
                 <div className="mobile-feedback-card">
                   <span>Hinweis</span>
                   <p>{feedback}</p>
@@ -1384,6 +1511,24 @@ export default function App() {
             ) : null}
           </section>
         </aside>
+
+        <RewardChoiceModal
+          choices={rewardChoices}
+          onChoose={handleRewardChoose}
+          onClose={() => setRewardChoices([])}
+          soundEnabled={soundEnabled}
+        />
+
+        {collectionOpen ? (
+          <div className="reward-modal-backdrop" role="presentation">
+            <CollectionView
+              unlockedIds={unlockedRewardIds}
+              bonusStars={bonusStars}
+              onClose={() => setCollectionOpen(false)}
+              soundEnabled={soundEnabled}
+            />
+          </div>
+        ) : null}
       </section>
     </main>
   );
