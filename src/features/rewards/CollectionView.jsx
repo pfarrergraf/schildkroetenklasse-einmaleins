@@ -2,7 +2,7 @@ import { DINO_REWARDS } from "./rewardCatalog";
 import { getCollectionProgress } from "./rewardLogic";
 import AnimatedDino from "./AnimatedDino";
 
-export default function CollectionView({ unlockedIds, bonusStars = 0, onClose, onOpenRewardVideo, soundEnabled = true }) {
+export default function CollectionView({ unlockedIds, bonusStars = 0, onClose, onOpenRewardVideo }) {
   const unlocked = new Set(unlockedIds);
   const progress = getCollectionProgress(unlockedIds);
 
@@ -43,7 +43,7 @@ export default function CollectionView({ unlockedIds, bonusStars = 0, onClose, o
               tabIndex={isUnlocked ? 0 : undefined}
             >
               {isUnlocked ? (
-                <AnimatedDino reward={reward} size="collection" soundEnabled={soundEnabled} active={false} showSoundButton={false} />
+                <AnimatedDino reward={reward} size="collection" active={false} />
               ) : (
                 <div className="dino-silhouette" aria-hidden="true">?</div>
               )}

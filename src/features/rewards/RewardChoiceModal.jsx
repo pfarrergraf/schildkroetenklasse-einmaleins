@@ -4,7 +4,6 @@ export default function RewardChoiceModal({
   choices,
   onChoose,
   onClose,
-  soundEnabled = true,
   achievementTitle = null,
   claimInFlight = false,
 }) {
@@ -34,7 +33,6 @@ export default function RewardChoiceModal({
                 reward={reward}
                 size="choice"
                 celebrate
-                soundEnabled={soundEnabled}
                 active={!claimInFlight && index === 0}
               />
               <strong>{reward.name}</strong>

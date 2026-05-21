@@ -1,4 +1,4 @@
-const CACHE_NAME = "schildkroetenklasse-einmaleins-v5";
+const CACHE_NAME = "schildkroetenklasse-einmaleins-v6";
 const SCOPE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, "");
 
 function withBase(path = "") {
@@ -14,8 +14,6 @@ const APP_SHELL = [
   withBase("index.html"),
   withBase("manifest.webmanifest"),
   withBase("icon.svg"),
-  withBase("icon-192.png"),
-  withBase("icon-512.png"),
 ];
 
 self.addEventListener("install", (event) => {

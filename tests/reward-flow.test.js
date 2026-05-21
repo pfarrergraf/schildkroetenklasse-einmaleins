@@ -16,6 +16,15 @@ import {
   persistRewardCheckpoint,
   resolveRewardBackendConfig,
 } from "../src/features/rewards/rewardBackend.js";
+import {
+  ANSWER_MODES,
+  buildTypedModeRecommendation,
+  getCorrectAnswerFeedback,
+  getModeIntroFeedback,
+  getModeSwitchFeedback,
+  getReadyFeedback,
+  getWrongAnswerFeedback,
+} from "../src/features/learning/sessionSupport.js";
 
 class MemoryStorage {
   constructor() {
@@ -233,4 +242,103 @@ test("achievement checks distinguish core mix and single hard row", () => {
   assert.ok(!coreResults.includes("non-core-single"));
   assert.ok(hardRowResults.includes("non-core-single"));
   assert.ok(!hardRowResults.includes("core-mix"));
+});
+
+test("wrong-answer feedback stays gentle and escalates support on repeats", () => {
+  assert.deepEqual(getWrongAnswerFeedback(1), {
+    text: "Guter Versuch. Schau noch mal.",
+    cueId: "wrongGentle",
+  });
+
+  assert.deepEqual(getWrongAnswerFeedback(3), {
+    text: "Ganz ruhig. Probier es noch einmal.",
+    cueId: "wrongSteady",
+  });
+});
+
+test("mode copy changes with answer mode", () => {
+  assert.equal(getModeIntroFeedback(ANSWER_MODES.CHOICE), "Neue Runde. Wähle die passende Antwort.");
+  assert.equal(getModeIntroFeedback(ANSWER_MODES.TYPED), "Neue Runde. Tippe die Antwort in Ruhe ein.");
+  assert.equal(getReadyFeedback(ANSWER_MODES.CHOICE), "Nächste Aufgabe. Wähle die passende Antwort.");
+  assert.equal(getReadyFeedback(ANSWER_MODES.TYPED), "Nächste Aufgabe. Tippe die Zahl ein.");
+  assert.equal(
+    getModeSwitchFeedback(ANSWER_MODES.TYPED),
+    "Tippen ist an. Du kannst jederzeit wieder zu den Antwortkarten wechseln."
+  );
+});
+
+test("typed correct feedback celebrates first, rotates in between, and returns on every third typed success", () => {
+  assert.deepEqual(getCorrectAnswerFeedback({ answerMode: ANSWER_MODES.TYPED, nextStreak: 1, typedCorrectCount: 0 }), {
+    text: "Stark. Du hast die Antwort selbst eingetippt.",
+    cueId: "typedCelebrate",
+  });
+
+  assert.deepEqual(getCorrectAnswerFeedback({ answerMode: ANSWER_MODES.TYPED, nextStreak: 2, typedCorrectCount: 1 }), {
+    text: "Ja. Stark getippt.",
+    cueId: "correctJa",
+  });
+
+  assert.deepEqual(getCorrectAnswerFeedback({ answerMode: ANSWER_MODES.TYPED, nextStreak: 3, typedCorrectCount: 2 }), {
+    text: "Stark. Du tippst schon ganz sicher.",
+    cueId: "typedCelebrate",
+  });
+});
+
+test("typed mode recommendation stays quiet without mastery signals", () => {
+  const recommendation = buildTypedModeRecommendation({
+    learningState: {
+      attemptsByTask: {},
+      rounds: [],
+      dailyPractice: {},
+    },
+    streak: 0,
+    selectedTables: [2, 5],
+  });
+
+  assert.equal(recommendation.shouldSuggest, false);
+  assert.equal(recommendation.shouldAutoEnable, false);
+});
+
+test("typed mode recommendation suggests after a strong streak", () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const recommendation = buildTypedModeRecommendation({
+    learningState: {
+      attemptsByTask: {},
+      rounds: [],
+      dailyPractice: {
+        [today]: { attempts: 9, correct: 8, rounds: 1 },
+      },
+    },
+    streak: 3,
+    selectedTables: [2, 5],
+  });
+
+  assert.equal(recommendation.shouldSuggest, true);
+  assert.equal(recommendation.shouldAutoEnable, false);
+  assert.match(recommendation.headline, /Tippen/);
+});
+
+test("typed mode recommendation can auto-enable after repeated strong practice", () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const recommendation = buildTypedModeRecommendation({
+    learningState: {
+      attemptsByTask: {
+        "7x3": { a: 7, b: 3, attempts: 3, correct: 3 },
+        "7x4": { a: 7, b: 4, attempts: 3, correct: 3 },
+      },
+      rounds: [
+        { perfect: true },
+        { perfect: true },
+      ],
+      dailyPractice: {
+        [today]: { attempts: 12, correct: 11, rounds: 2 },
+      },
+    },
+    streak: 4,
+    selectedTables: [7],
+  });
+
+  assert.equal(recommendation.shouldSuggest, true);
+  assert.equal(recommendation.shouldAutoEnable, true);
+  assert.match(recommendation.headline, /freigeschaltet/);
 });

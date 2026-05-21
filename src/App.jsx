@@ -20,7 +20,6 @@ import {
   loadUnlockedRewardIds,
   loadCompletedAchievementIds,
   addCompletedAchievementIds,
-  playDinoRewardSound,
   persistRewardCheckpoint,
   saveConsecutivePerfectRounds,
   saveRewardedTableCount,
@@ -30,7 +29,21 @@ import {
   getAchievementById,
   unlockRewardId,
 } from "./features/rewards";
-import { loadLearningState, recordAnswerAttempt, recordRoundSummary } from "./features/learning";
+import {
+  ANSWER_MODES,
+  buildTypedModeRecommendation,
+  cleanChoiceAnswer,
+  cleanTypedAnswer,
+  generateAnswerOptions,
+  getCorrectAnswerFeedback,
+  getModeIntroFeedback,
+  getModeSwitchFeedback,
+  getReadyFeedback,
+  getWrongAnswerFeedback,
+  loadLearningState,
+  recordAnswerAttempt,
+  recordRoundSummary,
+} from "./features/learning";
 import "./features/rewards/dinoRewardStyles.css";
 import "./features/learning/learningStyles.css";
 import halloImage from "../assets/Hallo.png";
@@ -53,8 +66,6 @@ const READY_TEXT = "Ich bin bereit für die nächste Aufgabe.";
 const FINISH_STRONG_TEXT = "Fertig! Das war schildkrötenstark.";
 const FINISH_SOFT_TEXT = "Fertig! Noch eine Runde und wir werden stärker.";
 const INPUT_WARNING_TEXT = "Bitte eine Zahl von 0 bis 100 eingeben.";
-const WRONG_TEXT = "Probiere es noch einmal.";
-const DOUBLE_WRONG_TEXT = "Gu gu ga ga!";
 const AUDIO_BASE_URL = `${import.meta.env.BASE_URL}audio/`;
 const LIP_SYNC_SILENCE_FLOOR = 0.02;
 const LIP_SYNC_FULL_OPEN = 0.16;
@@ -151,75 +162,101 @@ const SPEECH_CUES = {
     id: "start",
     text: START_TEXT,
     scene: "hello",
-    audioFiles: [`${AUDIO_BASE_URL}Hallo%20Schildkroetenklasse%20ich%20bin%20Schildi%20und%20uebe%20mit%20dir.wav`],
+    audioFiles: audioFiles("Hallo Schildkroetenklasse ich bin Schildi und uebe mit dir.wav"),
   },
   ready: {
     id: "ready",
     text: READY_TEXT,
     scene: "idle",
-    audioFiles: [`${AUDIO_BASE_URL}Ich%20bin%20bereit%20fuer%20die%20naechste%20Aufgabe.wav`],
+    audioFiles: audioFiles("Ich bin bereit fuer die naechste Aufgabe.wav"),
   },
   finishStrong: {
     id: "finishStrong",
     text: FINISH_STRONG_TEXT,
     scene: "finish",
-    audioFiles: [`${AUDIO_BASE_URL}Fertig%20das%20war%20schildkroetenstark.mp3`],
+    audioFiles: audioFiles("Fertig das war schildkroetenstark.mp3"),
   },
   finishSoft: {
     id: "finishSoft",
     text: FINISH_SOFT_TEXT,
     scene: "finish",
-    audioFiles: [`${AUDIO_BASE_URL}Fertig%20noch%20eine%20Runde%20und%20wir%20werden%20staerker.wav`],
+    audioFiles: audioFiles("Fertig noch eine Runde und wir werden staerker.wav"),
   },
   inputWarning: {
     id: "inputWarning",
     text: INPUT_WARNING_TEXT,
     scene: "warning",
-    audioFiles: [
-      `${AUDIO_BASE_URL}Bitte%20eine%20Zahl%20von%200%20bis%20100%20eingeben.mp3`,
-      `${AUDIO_BASE_URL}Bitte%20eine%20Zahl%20von%200%20bis%20100%20eingeben.wav`,
-    ],
+    audioFiles: audioFiles("Bitte eine Zahl von 0 bis 100 eingeben.mp3", "Bitte eine Zahl von 0 bis 100 eingeben.wav"),
   },
-  wrong: {
-    id: "wrong",
-    text: WRONG_TEXT,
+  // Some of the gentle coaching lines are new. We wire them to their target
+  // filenames now so fresh recordings start working immediately once dropped
+  // into public/audio/.
+  wrongGentle: {
+    id: "wrongGentle",
+    text: "Guter Versuch. Schau noch mal.",
     scene: "sad",
-    audioFiles: [`${AUDIO_BASE_URL}Probier%20es%20noch%20einmal.wav`],
+    audioFiles: audioFiles("Guter Versuch schau noch mal.wav", "Guter Versuch schau noch mal.mp3"),
   },
-  doubleWrong: {
-    id: "doubleWrong",
-    text: DOUBLE_WRONG_TEXT,
+  wrongSteady: {
+    id: "wrongSteady",
+    text: "Ganz ruhig. Probier es noch einmal.",
     scene: "sad",
-    audioFiles: [`${AUDIO_BASE_URL}gugugaga.wav`],
+    audioFiles: audioFiles("Ganz ruhig probier es noch einmal.wav", "Ganz ruhig probier es noch einmal.mp3"),
   },
   correctJa: {
     id: "correctJa",
     text: "Ja, gut gemacht!",
     scene: "happy",
-    audioFiles: [`${AUDIO_BASE_URL}Ja%20gut%20gemacht.wav`],
+    audioFiles: audioFiles("Ja gut gemacht.wav"),
   },
   correctSuper: {
     id: "correctSuper",
     text: "Super gerechnet!",
     scene: "happy",
-    audioFiles: [`${AUDIO_BASE_URL}Super%20gerechnet.wav`],
+    audioFiles: audioFiles("Super gerechnet.wav"),
   },
   correctKlasse: {
     id: "correctKlasse",
     text: "Klasse, Samuel!",
     scene: "happy",
-    audioFiles: [`${AUDIO_BASE_URL}Klasse%20Samuel.wav`],
+    audioFiles: audioFiles("Klasse Samuel.wav"),
   },
   correctStrong: {
     id: "correctStrong",
     text: "Richtig! Schildkrötenstark!",
     scene: "happy",
-    audioFiles: [`${AUDIO_BASE_URL}Richtig%20Schildkroetenstark.wav`],
+    audioFiles: audioFiles("Richtig Schildkroetenstark.wav"),
+  },
+  typedCelebrate: {
+    id: "typedCelebrate",
+    text: "Stark. Du hast die Antwort selbst eingetippt.",
+    scene: "happy",
+    audioFiles: audioFiles("Stark du hast die Antwort selbst eingetippt.wav", "Stark du hast die Antwort selbst eingetippt.mp3"),
+  },
+  typedUnlocked: {
+    id: "typedUnlocked",
+    text: "Neue Herausforderung freigeschaltet: Tippen!",
+    scene: "hello",
+    audioFiles: audioFiles(
+      "Neue Herausforderung freigeschaltet Tippen.wav",
+      "Neue Herausforderung freigeschaltet Tippen.mp3"
+    ),
   },
 };
 
-const CORRECT_CUE_IDS = ["correctJa", "correctSuper", "correctStrong"];
 const INITIAL_PENDING_REWARD_OFFER = loadPendingRewardOffer();
+
+function toAudioUrl(fileName) {
+  return `${AUDIO_BASE_URL}${encodeURIComponent(fileName)}`;
+}
+
+function audioFiles(...fileNames) {
+  return fileNames.map((fileName) => toAudioUrl(fileName));
+}
+
+function getInitialAnswerMode() {
+  return ANSWER_MODES.CHOICE;
+}
 
 function createTask(selectedTables, previousTask) {
   const pool = selectedTables.length ? selectedTables : TABLES;
@@ -243,46 +280,25 @@ function createTask(selectedTables, previousTask) {
   return { a, b, answer: a * b };
 }
 
-function createOptions(correctAnswer) {
-  const options = new Set([correctAnswer]);
-  const deltas = [-20, -15, -12, -10, -9, -8, -6, -5, -4, -3, -2, 2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 20];
-
-  while (options.size < 4) {
-    const delta = deltas[Math.floor(Math.random() * deltas.length)];
-    const candidate = correctAnswer + delta;
-
-    if (candidate >= 0 && candidate <= 100) {
-      options.add(candidate);
-    } else {
-      options.add(Math.floor(Math.random() * 101));
-    }
-  }
-
-  return Array.from(options).sort(() => Math.random() - 0.5);
-}
-
-function cleanAnswer(value) {
-  const normalized = String(value).trim().replace(",", ".");
-  if (!normalized) return null;
-
-  const number = Number(normalized);
-  if (!Number.isInteger(number)) return null;
-  if (number < 0 || number > 100) return null;
-  return number;
+function createOptions(task, learningState, { round = 0, streak = 0, consecutivePerfectRounds = 0 } = {}) {
+  return generateAnswerOptions({
+    task,
+    learningState,
+    round,
+    streak,
+    consecutivePerfectRounds,
+    answerMode: ANSWER_MODES.CHOICE,
+  });
 }
 
 function encouragement(score, round) {
-  if (round === 0) return "Starte in Ruhe. Genauigkeit ist wichtiger als Tempo.";
+  if (round === 0) return "Starte in Ruhe. Erst denken, dann antworten.";
 
   const ratio = score / round;
   if (ratio >= 0.9) return "Bärenstark. Du rechnest schon sehr sicher.";
-  if (ratio >= 0.7) return "Sehr gut. Das kleine Einmaleins sitzt immer besser.";
+  if (ratio >= 0.7) return "Sehr gut. Deine Reihen werden immer vertrauter.";
   if (ratio >= 0.5) return "Prima dranbleiben. Jeder Versuch macht dich sicherer.";
-  return "Ganz ruhig. Schritt für Schritt wird das immer leichter.";
-}
-
-function randomCorrectCueId() {
-  return CORRECT_CUE_IDS[Math.floor(Math.random() * CORRECT_CUE_IDS.length)];
+  return "Ganz ruhig. Fehler helfen beim Lernen.";
 }
 
 function buildFrameSequence(frameCount) {
@@ -394,14 +410,6 @@ function warmImageSources(sources) {
   });
 }
 
-function getInitialKeyboardEnabled() {
-  if (typeof window === "undefined") {
-    return true;
-  }
-
-  return !window.matchMedia("(max-width: 860px) and (pointer: coarse)").matches;
-}
-
 function getInitialCompactMobile() {
   if (typeof window === "undefined") {
     return false;
@@ -447,12 +455,18 @@ function saveSelectedTables(selectedTables) {
 export default function App() {
   const [selectedTables, setSelectedTables] = useState(() => loadSelectedTables());
   const [task, setTask] = useState(() => createTask(loadSelectedTables()));
-  const [options, setOptions] = useState(() => createOptions(task.answer));
+  const [options, setOptions] = useState(() =>
+    createOptions(task, loadLearningState(), {
+      round: 0,
+      streak: 0,
+      consecutivePerfectRounds: loadConsecutivePerfectRounds(),
+    })
+  );
   const [typedAnswer, setTypedAnswer] = useState("");
   const [score, setScore] = useState(0);
   const [round, setRound] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [feedback, setFeedback] = useState("Wähle eine Antwort oder tippe die Zahl ein.");
+  const [feedback, setFeedback] = useState(() => getModeIntroFeedback(getInitialAnswerMode()));
   const [lastWasCorrect, setLastWasCorrect] = useState(null);
   const [gameFinished, setGameFinished] = useState(false);
   const [bestScore, setBestScore] = useState(0);
@@ -473,7 +487,8 @@ export default function App() {
   const [lastSpeechMode, setLastSpeechMode] = useState("none");
   const [lastCueId, setLastCueId] = useState("start");
   const [frameIndex, setFrameIndex] = useState(0);
-  const [keyboardEnabled, setKeyboardEnabled] = useState(() => getInitialKeyboardEnabled());
+  const [answerMode, setAnswerModeState] = useState(() => getInitialAnswerMode());
+  const [typedModeOptOut, setTypedModeOptOut] = useState(false);
   const [isCompactMobile, setIsCompactMobile] = useState(() => getInitialCompactMobile());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedMobileSection, setExpandedMobileSection] = useState(null);
@@ -506,10 +521,20 @@ export default function App() {
   const taskHadMistakeRef = useRef(false);
   const consecutiveWrongAnswersRef = useRef(0);
   const rewardClaimInFlightRef = useRef(false);
+  const typedCorrectCountRef = useRef(0);
   const [rewardClaimInFlight, setRewardClaimInFlight] = useState(false);
 
   const progressPercent = useMemo(() => Math.round((round / ROUNDS_PER_GAME) * 100), [round]);
   const currentPraise = useMemo(() => encouragement(score, round), [score, round]);
+  const typedModeRecommendation = useMemo(
+    () => buildTypedModeRecommendation({ learningState, streak, selectedTables }),
+    [learningState, selectedTables, streak]
+  );
+  const showTypedModeCoach =
+    !gameFinished &&
+    answerMode === ANSWER_MODES.CHOICE &&
+    !typedModeOptOut &&
+    typedModeRecommendation.shouldSuggest;
   const currentScene = SCENES[turtleScene] ?? SCENES.hello;
   const currentFrame = currentScene.frames[frameIndex % currentScene.frames.length] ?? currentScene.frames[0];
   const rewardBackendStatusText = useMemo(() => getRewardBackendStatusText(rewardBackendStatus), [rewardBackendStatus]);
@@ -548,6 +573,14 @@ export default function App() {
       window.clearTimeout(answerTimerRef.current);
       answerTimerRef.current = null;
     }
+  }
+
+  function buildChoiceOptions(nextTask, overrides = {}) {
+    return createOptions(nextTask, overrides.learningState ?? learningState, {
+      round: overrides.round ?? round,
+      streak: overrides.streak ?? streak,
+      consecutivePerfectRounds: overrides.consecutivePerfectRounds ?? consecutivePerfectRounds,
+    });
   }
 
   async function persistRewardState(overrides = {}, event = null) {
@@ -1021,6 +1054,7 @@ export default function App() {
         coordinate_system: "UI layout only, no canvas. Top-to-bottom reading order.",
         task: `${task.a} x ${task.b}`,
         answer: task.answer,
+        answerMode,
         typedAnswer,
         round,
         totalRounds: ROUNDS_PER_GAME,
@@ -1037,6 +1071,8 @@ export default function App() {
         speaking: isSpeaking,
         lastSpeechMode,
         lastCueId,
+        typedModeSuggested: showTypedModeCoach,
+        typedModeRecommendation: typedModeRecommendation.headline,
         rewardBackendMode: rewardBackendStatus.activeMode,
         rewardBackendTransport: rewardBackendStatus.transport,
         rewardPendingOfferId: pendingRewardOffer?.offerId ?? null,
@@ -1051,6 +1087,7 @@ export default function App() {
     };
   }, [
     currentScene.frames.length,
+    answerMode,
     feedback,
     frameIndex,
     gameFinished,
@@ -1067,10 +1104,42 @@ export default function App() {
     soundEnabled,
     streak,
     task,
+    typedModeRecommendation.headline,
+    showTypedModeCoach,
     turtleScene,
     turtleSpeech,
     typedAnswer,
   ]);
+
+  useEffect(() => {
+    if (
+      !typedModeRecommendation.shouldAutoEnable ||
+      answerMode === ANSWER_MODES.TYPED ||
+      typedModeOptOut ||
+      gameFinished ||
+      isChecking
+    ) {
+      return;
+    }
+
+    setAnswerModeState(ANSWER_MODES.TYPED);
+    setFeedback("Tippen ist jetzt freigeschaltet. Du kannst jederzeit wieder zu den Antwortkarten wechseln.");
+    void playCue("typedUnlocked");
+  }, [
+    answerMode,
+    gameFinished,
+    isChecking,
+    typedModeOptOut,
+    typedModeRecommendation.shouldAutoEnable,
+  ]);
+
+  useEffect(() => {
+    if (answerMode !== ANSWER_MODES.TYPED || isChecking) {
+      return;
+    }
+
+    inputRef.current?.focus();
+  }, [answerMode, isChecking, task]);
 
   async function playCue(cueId) {
     const cue = SPEECH_CUES[cueId];
@@ -1200,10 +1269,10 @@ export default function App() {
     const next = createTask(selectedTables, task);
     taskHadMistakeRef.current = false;
     setTask(next);
-    setOptions(createOptions(next.answer));
+    setOptions(buildChoiceOptions(next));
     setTypedAnswer("");
     setLastWasCorrect(null);
-    setFeedback("Nächste Aufgabe. Wähle eine Antwort oder tippe die Zahl ein.");
+    setFeedback(getReadyFeedback(answerMode));
   }
 
   async function finishGame(finalScore, flowToken) {
@@ -1343,12 +1412,12 @@ export default function App() {
     setIsChecking(false);
   }
 
-  async function checkAnswer(answer) {
+  async function checkAnswer(answer, sourceMode = answerMode) {
     if (gameFinished || isChecking) return;
 
     blurAnswerInput();
 
-    const number = cleanAnswer(answer);
+    const number = sourceMode === ANSWER_MODES.CHOICE ? cleanChoiceAnswer(answer) : cleanTypedAnswer(answer);
     if (number === null) {
       setFeedback("Bitte gib nur ganze Zahlen zwischen 0 und 100 ein.");
       setLastWasCorrect(false);
@@ -1378,8 +1447,9 @@ export default function App() {
       taskHadMistakeRef.current = true;
       setStreak(0);
       setTypedAnswer("");
-      setFeedback(WRONG_TEXT);
-      const cueId = consecutiveWrongAnswersRef.current >= 2 ? "doubleWrong" : "wrong";
+      const wrongFeedback = getWrongAnswerFeedback(consecutiveWrongAnswersRef.current);
+      setFeedback(wrongFeedback.text);
+      const cueId = wrongFeedback.cueId;
       await playCue(cueId);
 
       if (flowTokenRef.current !== flowToken) {
@@ -1394,12 +1464,21 @@ export default function App() {
     const solvedWithoutMistake = !taskHadMistakeRef.current;
     const nextRound = round + 1;
     const nextScore = score + (solvedWithoutMistake ? 1 : 0);
+    const nextStreak = solvedWithoutMistake ? streak + 1 : 0;
+    const correctFeedback = getCorrectAnswerFeedback({
+      answerMode: sourceMode,
+      nextStreak,
+      typedCorrectCount: typedCorrectCountRef.current,
+    });
 
     setRound(nextRound);
     setScore(nextScore);
-    setStreak(solvedWithoutMistake ? streak + 1 : 0);
-    setFeedback("Richtig gerechnet. Schildi freut sich mit dir.");
-    const cueId = randomCorrectCueId();
+    setStreak(nextStreak);
+    setFeedback(correctFeedback.text);
+    if (sourceMode === ANSWER_MODES.TYPED) {
+      typedCorrectCountRef.current += 1;
+    }
+    const cueId = correctFeedback.cueId;
     await playCue(cueId);
 
     if (flowTokenRef.current !== flowToken) {
@@ -1427,10 +1506,15 @@ export default function App() {
     const next = createTask(selectedTables, task);
     taskHadMistakeRef.current = false;
     setTask(next);
-    setOptions(createOptions(next.answer));
+    setOptions(
+      buildChoiceOptions(next, {
+        round: nextRound,
+        streak: nextStreak,
+      })
+    );
     setTypedAnswer("");
     setLastWasCorrect(null);
-    setFeedback("Nächste Aufgabe. Wähle eine Antwort oder tippe die Zahl ein.");
+    setFeedback(getReadyFeedback(answerMode));
     setIsChecking(false);
     await playCue("ready");
 
@@ -1447,12 +1531,18 @@ export default function App() {
 
     const firstTask = createTask(selectedTables);
     setTask(firstTask);
-    setOptions(createOptions(firstTask.answer));
+    setOptions(
+      createOptions(firstTask, learningState, {
+        round: 0,
+        streak: 0,
+        consecutivePerfectRounds,
+      })
+    );
     setTypedAnswer("");
     setScore(0);
     setRound(0);
     setStreak(0);
-    setFeedback("Neue Runde. Wähle eine Antwort oder tippe die Zahl ein.");
+    setFeedback(getModeIntroFeedback(answerMode));
     setLastWasCorrect(null);
     setGameFinished(false);
     setIsChecking(false);
@@ -1470,8 +1560,10 @@ export default function App() {
     setChallengeModalOpen(false);
     setShowTableSelector(false);
     setTableCoachPromptVisible(false);
+    setTypedModeOptOut(false);
     setRewardClaimInFlight(false);
     rewardClaimInFlightRef.current = false;
+    typedCorrectCountRef.current = 0;
     taskHadMistakeRef.current = false;
     consecutiveWrongAnswersRef.current = 0;
     frameStepRef.current = 0;
@@ -1521,7 +1613,6 @@ export default function App() {
       }
 
       setCollectionOpen(true);
-      await playDinoRewardSound(reward, { soundEnabled });
       await persistRewardState(
         {
           unlockedRewardIds: nextIds,
@@ -1534,7 +1625,7 @@ export default function App() {
           createdAt: new Date().toISOString(),
           data: {
             rewardId: reward.id,
-            via: "sound-only",
+            via: "collection",
           },
         }
       );
@@ -1564,6 +1655,11 @@ export default function App() {
     }
   }
 
+  function openCollectionFromMenu() {
+    setCollectionOpen(true);
+    setMobileMenuOpen(false);
+  }
+
   function handleChallengeAccept(challenge, tables) {
     setChallengeModalOpen(false);
     setMobileMenuOpen(false);
@@ -1584,7 +1680,7 @@ export default function App() {
         setSelectedTables(sanitized);
         const challengeTask = createTask(sanitized);
         setTask(challengeTask);
-        setOptions(createOptions(challengeTask.answer));
+        setOptions(buildChoiceOptions(challengeTask));
       }
     }
   }
@@ -1596,26 +1692,42 @@ export default function App() {
     void playCue(lastCueId);
   }
 
+  function setAnswerMode(nextMode, { manual = false, announce = false } = {}) {
+    const enableTyped = nextMode === ANSWER_MODES.TYPED;
+
+    if (!enableTyped) {
+      setTypedAnswer("");
+      blurAnswerInput();
+      setOptions(buildChoiceOptions(task));
+    }
+
+    setAnswerModeState(nextMode);
+
+    if (manual) {
+      setTypedModeOptOut(!enableTyped);
+    } else if (enableTyped) {
+      setTypedModeOptOut(false);
+    }
+
+    if (announce) {
+      setFeedback(getModeSwitchFeedback(nextMode));
+    }
+  }
+
   function handleOptionClick(option) {
     setTypedAnswer(String(option));
-    checkAnswer(option);
+    checkAnswer(option, ANSWER_MODES.CHOICE);
   }
 
   function handleSubmit(event) {
     event.preventDefault();
-    checkAnswer(typedAnswer);
+    checkAnswer(typedAnswer, ANSWER_MODES.TYPED);
   }
 
   function toggleKeyboardInput() {
-    setKeyboardEnabled((current) => {
-      const next = !current;
-
-      if (!next) {
-        setTypedAnswer("");
-        blurAnswerInput();
-      }
-
-      return next;
+    setAnswerMode(answerMode === ANSWER_MODES.TYPED ? ANSWER_MODES.CHOICE : ANSWER_MODES.TYPED, {
+      manual: true,
+      announce: true,
     });
   }
 
@@ -1693,6 +1805,53 @@ export default function App() {
               {feedback}
             </div>
 
+            <div className="answer-mode-toggle" role="group" aria-label="Antwortmodus">
+              <button
+                type="button"
+                className={answerMode === ANSWER_MODES.CHOICE ? "settings-toggle-button active" : "settings-toggle-button"}
+                aria-pressed={answerMode === ANSWER_MODES.CHOICE}
+                onClick={() => setAnswerMode(ANSWER_MODES.CHOICE, { manual: true, announce: true })}
+                disabled={isChecking}
+              >
+                Antwortkarten
+              </button>
+              <button
+                type="button"
+                className={answerMode === ANSWER_MODES.TYPED ? "settings-toggle-button active" : "settings-toggle-button"}
+                aria-pressed={answerMode === ANSWER_MODES.TYPED}
+                onClick={() => setAnswerMode(ANSWER_MODES.TYPED, { manual: true, announce: true })}
+                disabled={isChecking}
+              >
+                Tippen
+              </button>
+            </div>
+
+            {showTypedModeCoach ? (
+              <div className="typed-mode-coach" data-testid="typed-mode-coach">
+                <strong>{typedModeRecommendation.headline}</strong>
+                <p>{typedModeRecommendation.body}</p>
+                <span>{typedModeRecommendation.reason}</span>
+                <div className="typed-mode-actions">
+                  <button
+                    type="button"
+                    className="submit-button"
+                    onClick={() => setAnswerMode(ANSWER_MODES.TYPED, { manual: true, announce: true })}
+                    disabled={isChecking}
+                  >
+                    Jetzt tippen
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => setTypedModeOptOut(true)}
+                    disabled={isChecking}
+                  >
+                    Spaeter
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             {!gameFinished ? (
               <>
                 <div className="task-card">
@@ -1700,19 +1859,42 @@ export default function App() {
                   <div>{task.a} × {task.b}</div>
                 </div>
 
-                <div className="answer-grid">
-                  {options.map((option) => (
-                    <button
-                      key={`${task.a}-${task.b}-${option}`}
-                      type="button"
-                      onClick={() => handleOptionClick(option)}
-                      className="answer-button"
-                      disabled={isChecking}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
+                {answerMode === ANSWER_MODES.TYPED ? (
+                  <form onSubmit={handleSubmit} className="answer-form play-answer-form">
+                    <label className="answer-label" htmlFor="typed-answer">Deine Antwort</label>
+                    <div className="answer-row">
+                      <input
+                        ref={inputRef}
+                        id="typed-answer"
+                        inputMode="numeric"
+                        min="0"
+                        max="100"
+                        type="number"
+                        value={typedAnswer}
+                        onChange={(event) => setTypedAnswer(event.target.value)}
+                        placeholder="0 bis 100"
+                        className="answer-input"
+                        disabled={isChecking}
+                        data-testid="answer-input"
+                      />
+                      <button type="submit" className="submit-button" disabled={isChecking} data-testid="submit-answer">Prüfen</button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="answer-grid">
+                    {options.map((option) => (
+                      <button
+                        key={`${task.a}-${task.b}-${option}`}
+                        type="button"
+                        onClick={() => handleOptionClick(option)}
+                        className="answer-button"
+                        disabled={isChecking}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </>
             ) : (
               <div className="finish-card">
@@ -1802,6 +1984,16 @@ export default function App() {
             <h2>Mehr</h2>
             <button type="button" className="secondary-button" onClick={() => setMobileMenuOpen(false)}>Schließen</button>
           </div>
+
+          <section className="mobile-utility-section">
+            <button
+              type="button"
+              className="mobile-section-toggle collection-menu-button"
+              onClick={openCollectionFromMenu}
+            >
+              🦖 Dino-Sammlung
+            </button>
+          </section>
 
           <section className="mobile-utility-section">
             <button
@@ -1899,7 +2091,7 @@ export default function App() {
                   completedAchievementIds={completedAchievementIds}
                   backendStatusText={rewardBackendStatusText}
                   hasPendingReward={Boolean(pendingRewardOffer?.choices?.length)}
-                  onOpenCollection={() => setCollectionOpen(true)}
+                  onOpenCollection={openCollectionFromMenu}
                   onOpenPendingReward={openPendingRewardOffer}
                   onOpenChallenges={() => { setChallengeModalOpen(true); setMobileMenuOpen(false); }}
                 />
@@ -1924,37 +2116,18 @@ export default function App() {
               <div className="mobile-section-content">
                 <div className="toggle-card mobile-toggle-card">
                   <h3>Tastatureingabe</h3>
-                  <p>Auf dem Smartphone bleibt die Tastatur ruhig aus, bis du sie bewusst wieder einschaltest.</p>
+                  <p>Du kannst jederzeit zwischen Antwortkarten und Tippen wechseln.</p>
                   <button
                     type="button"
                     onClick={toggleKeyboardInput}
-                    className={keyboardEnabled ? "settings-toggle-button active" : "settings-toggle-button"}
-                    aria-pressed={keyboardEnabled}
+                    className={answerMode === ANSWER_MODES.TYPED ? "settings-toggle-button active" : "settings-toggle-button"}
+                    aria-pressed={answerMode === ANSWER_MODES.TYPED}
                   >
-                    {keyboardEnabled ? "Tastatur an" : "Tastatur aus"}
+                    {answerMode === ANSWER_MODES.TYPED ? "Tippen an" : "Tippen aus"}
                   </button>
 
-                  {keyboardEnabled ? (
-                    <form onSubmit={handleSubmit} className="answer-form drawer-answer-form">
-                      <label className="answer-label" htmlFor="typed-answer">Deine Antwort</label>
-                      <div className="answer-row">
-                        <input
-                          ref={inputRef}
-                          id="typed-answer"
-                          inputMode="numeric"
-                          min="0"
-                          max="100"
-                          type="number"
-                          value={typedAnswer}
-                          onChange={(event) => setTypedAnswer(event.target.value)}
-                          placeholder="0 bis 100"
-                          className="answer-input"
-                          disabled={isChecking}
-                          data-testid="answer-input"
-                        />
-                        <button type="submit" className="submit-button" disabled={isChecking} data-testid="submit-answer">Prüfen</button>
-                      </div>
-                    </form>
+                  {answerMode === ANSWER_MODES.TYPED ? (
+                    <div className="drawer-keyboard-hint">Das Tippfeld ist jetzt direkt oben im Spiel sichtbar.</div>
                   ) : (
                     <div className="drawer-keyboard-hint">Solange die Tastatur aus ist, reichen oben die großen Antwortfelder.</div>
                   )}
@@ -2007,7 +2180,6 @@ export default function App() {
           choices={rewardModalOpen ? pendingRewardOffer?.choices ?? [] : []}
           onChoose={handleRewardChoose}
           onClose={() => setRewardModalOpen(false)}
-          soundEnabled={soundEnabled}
           achievementTitle={rewardTriggerTitle}
           claimInFlight={rewardClaimInFlight}
         />
@@ -2021,7 +2193,6 @@ export default function App() {
               bonusStars={bonusStars}
               onClose={() => setCollectionOpen(false)}
               onOpenRewardVideo={handleCollectionRewardOpen}
-              soundEnabled={soundEnabled}
             />
           </div>
         ) : null}

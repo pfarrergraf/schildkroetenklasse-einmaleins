@@ -48,7 +48,7 @@ button:disabled {
 
 .app-shell {
   min-height: 100vh;
-  padding: 18px 14px calc(20px + var(--safe-bottom));
+  padding: 10px 10px calc(12px + var(--safe-bottom));
   background:
     radial-gradient(circle at top left, rgba(255, 220, 113, 0.72) 0, transparent 22rem),
     radial-gradient(circle at top right, rgba(151, 221, 169, 0.75) 0, transparent 24rem),
@@ -289,12 +289,12 @@ h1 {
 }
 
 .play-panel {
-  padding: 18px;
+  padding: 14px;
 }
 
 .game-card,
 .settings-card {
-  padding: 24px;
+  padding: 18px;
 }
 
 .game-topline {
@@ -302,7 +302,7 @@ h1 {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .round-label,
@@ -376,11 +376,11 @@ h1 {
 .turtle-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 250px;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
-  margin-bottom: 20px;
-  padding: 16px;
-  border-radius: 30px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 24px;
   background:
     radial-gradient(circle at 28% 50%, rgba(214, 255, 183, 0.58) 0, transparent 24rem),
     radial-gradient(circle at 78% 24%, rgba(255, 233, 146, 0.45) 0, transparent 16rem),
@@ -391,13 +391,13 @@ h1 {
 
 .turtle-speech {
   position: relative;
-  min-height: 92px;
+  min-height: 78px;
   display: flex;
   align-items: center;
-  padding: 18px 20px;
-  border-radius: 24px;
-  font-size: clamp(1.05rem, 3.2vw, 1.28rem);
-  line-height: 1.42;
+  padding: 14px 16px;
+  border-radius: 20px;
+  font-size: clamp(0.98rem, 3vw, 1.18rem);
+  line-height: 1.34;
   font-weight: 900;
   box-shadow: 0 18px 32px rgba(69, 97, 84, 0.08);
 }
@@ -452,7 +452,7 @@ h1 {
 
 .turtle-stage {
   position: relative;
-  min-height: 290px;
+  min-height: 244px;
   display: grid;
   place-items: center;
 }
@@ -496,9 +496,9 @@ h1 {
   position: relative;
   z-index: 2;
   overflow: hidden;
-  width: min(100%, 240px);
-  padding: 8px;
-  border-radius: 38px;
+  width: min(100%, 208px);
+  padding: 6px;
+  border-radius: 30px;
   background:
     radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.92) 0, rgba(255, 255, 255, 0.55) 38%, rgba(255, 255, 255, 0.16) 100%);
   box-shadow:
@@ -792,7 +792,7 @@ h1 {
   overflow: hidden;
   border-radius: 999px;
   background: #e4eee4;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .progress-fill {
@@ -805,14 +805,14 @@ h1 {
 .game-status-strip {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 14px;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
 .game-status-pill {
-  min-height: 52px;
-  padding: 10px 14px;
-  border-radius: 18px;
+  min-height: 46px;
+  padding: 8px 12px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(85, 133, 103, 0.14);
   box-shadow: 0 10px 20px rgba(47, 86, 65, 0.06);
@@ -834,23 +834,23 @@ h1 {
 
 .game-status-pill strong {
   display: block;
-  margin-top: 4px;
+  margin-top: 2px;
   color: #173028;
-  font-size: 1rem;
+  font-size: 0.94rem;
   line-height: 1.2;
 }
 
 .task-card {
-  margin-bottom: 20px;
-  padding: clamp(24px, 7vw, 44px) 18px;
-  border-radius: 30px;
+  margin-bottom: 12px;
+  padding: clamp(18px, 5vw, 30px) 14px;
+  border-radius: 24px;
   background: linear-gradient(180deg, #fff7d3 0%, #ffefb1 100%);
   border: 1px solid rgba(255, 205, 89, 0.5);
   text-align: center;
 }
 
 .task-card p {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   color: #93610f;
   font-size: 0.82rem;
   font-weight: 900;
@@ -859,7 +859,7 @@ h1 {
 }
 
 .task-card div {
-  font-size: clamp(4.4rem, 19vw, 7.5rem);
+  font-size: clamp(3.6rem, 16vw, 6.4rem);
   line-height: 0.95;
   font-weight: 1000;
   letter-spacing: -0.08em;
@@ -868,18 +868,18 @@ h1 {
 .answer-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .answer-button {
-  min-height: 84px;
+  min-height: 72px;
   border: 0;
-  border-radius: 24px;
+  border-radius: 20px;
   color: #ffffff;
   background: linear-gradient(160deg, #1b2340, #11182e);
   box-shadow: 0 14px 28px rgba(17, 24, 46, 0.22);
-  font-size: clamp(2rem, 7vw, 3rem);
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
   font-weight: 900;
   transition: transform 140ms ease, background 140ms ease, box-shadow 140ms ease;
 }
@@ -901,9 +901,9 @@ h1 {
 .answer-form {
   display: grid;
   gap: 10px;
-  margin-bottom: 6px;
-  padding: 14px;
-  border-radius: 28px;
+  margin-bottom: 4px;
+  padding: 10px;
+  border-radius: 22px;
   background: #f6fbf6;
   border: 1px solid rgba(85, 168, 92, 0.14);
 }
@@ -927,8 +927,8 @@ h1 {
 .answer-input {
   min-width: 0;
   flex: 1;
-  min-height: 64px;
-  padding: 0 18px;
+  min-height: 56px;
+  padding: 0 16px;
   border: 2px solid #dae8d9;
   border-radius: 20px;
   color: var(--ink);
@@ -944,7 +944,7 @@ h1 {
 }
 
 .submit-button {
-  padding: 0 26px;
+  padding: 0 22px;
   color: #173028;
   background: linear-gradient(145deg, #ffd963, #f6bb45);
   box-shadow: 0 14px 28px rgba(246, 187, 69, 0.22);
@@ -955,11 +955,11 @@ h1 {
 }
 
 .feedback {
-  margin-top: 18px;
-  padding: 18px;
-  border-radius: 24px;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 20px;
   text-align: center;
-  font-size: 1.04rem;
+  font-size: 0.98rem;
   font-weight: 850;
 }
 
@@ -979,6 +979,51 @@ h1 {
   color: #7a4941;
   background: #fff0eb;
   border: 1px solid #f8d3c8;
+}
+
+.answer-mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.typed-mode-coach {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 14px;
+  border-radius: 20px;
+  color: #214b37;
+  background: linear-gradient(180deg, #eefbe6 0%, #f8fff1 100%);
+  border: 1px solid #cae8bd;
+}
+
+.typed-mode-coach strong {
+  font-size: 1rem;
+}
+
+.typed-mode-coach p,
+.typed-mode-coach span {
+  margin-bottom: 0;
+  line-height: 1.45;
+}
+
+.typed-mode-coach span {
+  color: #587064;
+  font-size: 0.92rem;
+}
+
+.typed-mode-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.play-answer-form {
+  margin-bottom: 10px;
 }
 
 .finish-card {
@@ -1025,7 +1070,7 @@ h1 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-  margin: 18px 0;
+  margin: 12px 0;
 }
 
 .table-button {
@@ -1050,11 +1095,11 @@ h1 {
 .info-card,
 .toggle-card {
   border-radius: 26px;
-  padding: 18px;
+  padding: 14px;
 }
 
 .toggle-card {
-  margin-top: 18px;
+  margin-top: 12px;
   background: #eef7fb;
   border: 1px solid #d5e6f2;
 }
@@ -1073,8 +1118,8 @@ h1 {
 }
 
 .mobile-feedback-card {
-  margin-top: 12px;
-  padding: 14px;
+  margin-top: 10px;
+  padding: 12px;
   border-radius: 20px;
   background: #f7fbf2;
   border: 1px solid #dfebd3;
@@ -1114,7 +1159,7 @@ h1 {
 }
 
 .tip-card {
-  margin-top: 18px;
+  margin-top: 12px;
   background: #f7fbf2;
   border: 1px solid #dfebd3;
 }
@@ -1131,7 +1176,7 @@ h1 {
 }
 
 .info-card {
-  margin-top: 14px;
+  margin-top: 10px;
   color: #ffffff;
   background: linear-gradient(160deg, #244c3f, #173028);
 }
@@ -1158,19 +1203,19 @@ h1 {
 
 @media (max-width: 620px) {
   .app-shell {
-    padding: 8px 8px calc(14px + var(--safe-bottom));
+    padding: 6px 6px calc(10px + var(--safe-bottom));
   }
 
   .game-card,
   .settings-card {
     border-radius: 26px;
-    padding: 14px;
+    padding: 12px;
     box-shadow: 0 18px 36px rgba(47, 86, 65, 0.12);
     backdrop-filter: none;
   }
 
   .play-panel {
-    min-height: calc(100vh - 16px - var(--safe-bottom));
+    min-height: calc(100vh - 12px - var(--safe-bottom));
   }
 
   .turtle-panel {
@@ -1215,7 +1260,7 @@ h1 {
 
   .task-card {
     margin-bottom: 12px;
-    padding: 16px 12px;
+    padding: 14px 10px;
     border-radius: 24px;
   }
 
@@ -1261,10 +1306,14 @@ h1 {
     margin-bottom: 0;
   }
 
+  .typed-mode-actions {
+    flex-direction: column;
+  }
+
   .answer-button {
-    min-height: 68px;
+    min-height: 62px;
     border-radius: 20px;
-    font-size: clamp(1.7rem, 7vw, 2.3rem);
+    font-size: clamp(1.55rem, 6vw, 2.1rem);
   }
 
   .answer-row {

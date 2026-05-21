@@ -1,5 +1,16 @@
 import { useEffect, useRef } from "react";
 
+function startRewardPlayback(player, reward) {
+  if (!player || !reward?.videoPath) {
+    return;
+  }
+
+  player.muted = false;
+  player.volume = 1;
+  player.currentTime = 0;
+  player.play().catch(() => {});
+}
+
 export default function RewardVideoModal({ reward, onClose }) {
   const videoRef = useRef(null);
 
@@ -7,26 +18,35 @@ export default function RewardVideoModal({ reward, onClose }) {
     const player = videoRef.current;
     if (!player || !reward?.videoPath) return undefined;
 
-    player.muted = false;
-    player.volume = 1;
-    player.currentTime = 0;
-    player.play().catch(() => {});
+    startRewardPlayback(player, reward);
+
+    const clipEndSeconds = Number(reward?.clipEndSeconds);
+    const handleTimeUpdate = () => {
+      if (!Number.isFinite(clipEndSeconds) || clipEndSeconds <= 0) {
+        return;
+      }
+
+      if (player.currentTime >= clipEndSeconds) {
+        player.pause();
+        player.currentTime = clipEndSeconds;
+      }
+    };
+
+    player.addEventListener("timeupdate", handleTimeUpdate);
 
     return () => {
+      player.removeEventListener("timeupdate", handleTimeUpdate);
       player.pause();
       player.currentTime = 0;
     };
-  }, [reward?.id, reward?.videoPath]);
+  }, [reward?.clipEndSeconds, reward?.id, reward?.videoPath]);
 
   if (!reward?.videoPath) return null;
 
   function replayVideo() {
     const player = videoRef.current;
     if (!player) return;
-    player.muted = false;
-    player.volume = 1;
-    player.currentTime = 0;
-    player.play().catch(() => {});
+    startRewardPlayback(player, reward);
   }
 
   return (

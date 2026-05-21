@@ -1,5 +1,6 @@
-// Diese Cue-Erweiterungen sind bewusst getrennt, damit Codex sie in die bestehende SPEECH_CUES-Struktur in src/App.jsx einfügen kann.
-// AUDIO_BASE_URL existiert bereits in App.jsx. Diese Datei ist Vorlage + Datenquelle für die Integration.
+// Reward-Coach-Cues bleiben als Textbausteine bestehen, auch wenn Reward-
+// Sounds inzwischen bewusst deaktiviert sind. Die echten Belohnungen kommen
+// jetzt über die Dino-Videos.
 
 export const REWARD_COACH_TEXTS = {
   rewardPerfect: "Wow, du hast alles richtig. Such dir einen Dino aus!",
@@ -9,31 +10,31 @@ export const REWARD_COACH_TEXTS = {
   rewardGood: "Gut geübt. Jeder Versuch macht dich sicherer.",
 };
 
-export function buildRewardSpeechCues(audioBaseUrl) {
+export function buildRewardSpeechCues() {
   return {
     rewardPerfect: {
       id: "rewardPerfect",
       text: REWARD_COACH_TEXTS.rewardPerfect,
       scene: "happy",
-      audioFiles: [`${audioBaseUrl}rewards/Wow%20du%20hast%20alles%20richtig%20such%20dir%20einen%20Dino%20aus.wav`],
+      audioFiles: [],
     },
     rewardUnlocked: {
       id: "rewardUnlocked",
       text: REWARD_COACH_TEXTS.rewardUnlocked,
       scene: "happy",
-      audioFiles: [`${audioBaseUrl}rewards/Der%20Dino%20gehoert%20jetzt%20zu%20deiner%20Sammlung.wav`],
+      audioFiles: [],
     },
     rewardCollectionComplete: {
       id: "rewardCollectionComplete",
       text: REWARD_COACH_TEXTS.rewardCollectionComplete,
       scene: "finish",
-      audioFiles: [`${audioBaseUrl}rewards/Du%20hast%20alle%20Dinos%20gesammelt%20jetzt%20sammelst%20du%20Bonus%20Sterne.wav`],
+      audioFiles: [],
     },
     rewardAlmost: {
       id: "rewardAlmost",
       text: REWARD_COACH_TEXTS.rewardAlmost,
       scene: "idle",
-      audioFiles: [`${audioBaseUrl}rewards/Fast%20perfekt%20du%20bist%20ganz%20nah%20dran.wav`],
+      audioFiles: [],
     },
   };
 }

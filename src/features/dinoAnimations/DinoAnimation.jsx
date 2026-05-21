@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { getDinoAnimation, loadDinoFrames } from "./dinoAnimationCatalog.js";
 
 export default function DinoAnimation({
@@ -6,7 +6,6 @@ export default function DinoAnimation({
   rewardId,
   size = "card",
   active = true,
-  playSound = false,
   labelVisible = false,
   className = "",
 }) {
@@ -14,7 +13,6 @@ export default function DinoAnimation({
   const [frameIndex, setFrameIndex] = useState(0);
   const [frames, setFrames] = useState([]);
   const [framesReady, setFramesReady] = useState(false);
-  const audioRef = useRef(null);
   const frameMs = useMemo(() => {
     if (dino?.motion === "stomp") return 135;
     if (dino?.motion === "wing-float") return 115;
@@ -58,21 +56,6 @@ export default function DinoAnimation({
 
     return () => window.clearInterval(timer);
   }, [active, frameMs, frames.length]);
-
-  useEffect(() => {
-    if (!playSound || !dino?.sound) return;
-
-    const audio = new Audio(dino.sound);
-    audio.volume = 0.55;
-    audioRef.current = audio;
-    audio.play().catch(() => {});
-
-    return () => {
-      audio.pause();
-      audio.currentTime = 0;
-    };
-  }, [playSound, dino?.sound]);
-
   if (!dino || (framesReady && frames.length === 0)) {
     return (
       <div className={`dino-animation dino-placeholder size-${size} ${className}`}>

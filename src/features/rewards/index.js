@@ -37,7 +37,6 @@ export {
 	persistRewardCheckpoint,
 	resolveRewardBackendConfig,
 } from "./rewardBackend";
-export { playDinoRewardSound, playSyntheticDinoSound } from "./dinoSound";
 export { default as AnimatedDino } from "./AnimatedDino";
 export { default as RewardChoiceModal } from "./RewardChoiceModal";
 export { default as RewardVideoModal } from "./RewardVideoModal";

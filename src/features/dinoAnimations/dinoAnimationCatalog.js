@@ -17,7 +17,6 @@ export const DINO_ANIMATIONS = [
     scientificName: "Brachiosaurus altithorax",
     shortText: "Bruno macht lange Hälse vor Freude.",
     motion: "gentle-walk",
-    sound: `${import.meta.env.BASE_URL}audio/rewards/brachiosaurus-altithorax.wav`,
   },
   {
     id: "triceratops-horridus",
@@ -27,7 +26,6 @@ export const DINO_ANIMATIONS = [
     scientificName: "Triceratops horridus",
     shortText: "Trixi stampft vor Begeisterung.",
     motion: "stomp",
-    sound: `${import.meta.env.BASE_URL}audio/rewards/triceratops-horridus.wav`,
   },
   {
     id: "pteranodon-longiceps",
@@ -37,7 +35,6 @@ export const DINO_ANIMATIONS = [
     scientificName: "Pteranodon longiceps",
     shortText: "Pico schwebt durch die Sammlung.",
     motion: "wing-float",
-    sound: `${import.meta.env.BASE_URL}audio/rewards/pteranodon-longiceps.wav`,
   },
   {
     id: "parasaurolophus-walkeri",
@@ -47,7 +44,6 @@ export const DINO_ANIMATIONS = [
     scientificName: "Parasaurolophus walkeri",
     shortText: "Paula nickt fröhlich mit ihrem Kamm.",
     motion: "gentle-walk",
-    sound: `${import.meta.env.BASE_URL}audio/rewards/parasaurolophus-walkeri.wav`,
   },
   {
     id: "velociraptor-mongoliensis",
@@ -57,7 +53,6 @@ export const DINO_ANIMATIONS = [
     scientificName: "Velociraptor mongoliensis",
     shortText: "Vito tänzelt blitzschnell vor Freude.",
     motion: "stomp",
-    sound: `${import.meta.env.BASE_URL}audio/rewards/velociraptor-mongoliensis.wav`,
   },
   {
     id: "stegosaurus-stenops",
@@ -67,7 +62,6 @@ export const DINO_ANIMATIONS = [
     scientificName: "Stegosaurus stenops",
     shortText: "Nora wackelt mit ihren Rückenplatten.",
     motion: "gentle-walk",
-    sound: `${import.meta.env.BASE_URL}audio/rewards/stegosaurus-stenops.wav`,
   },
   {
     id: "tyrannosaurus-rex",
@@ -77,7 +71,6 @@ export const DINO_ANIMATIONS = [
     scientificName: "Tyrannosaurus rex",
     shortText: "Roxi brüllt begeistert los.",
     motion: "stomp",
-    sound: `${import.meta.env.BASE_URL}audio/rewards/tyrannosaurus-rex.wav`,
   },
   {
     id: "euoplocephalus-tutus",
@@ -87,7 +80,6 @@ export const DINO_ANIMATIONS = [
     scientificName: "Euoplocephalus tutus",
     shortText: "Eulo schwingt fröhlich seine Schwanzkeule.",
     motion: "gentle-walk",
-    sound: `${import.meta.env.BASE_URL}audio/rewards/euoplocephalus-tutus.wav`,
   },
 ];
 

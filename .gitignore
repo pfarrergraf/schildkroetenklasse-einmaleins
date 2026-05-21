@@ -12,6 +12,7 @@ schildi-real-render-series-only-v2/
 schildi-upgrade-modules/
 progress.md
 CODEX-INSTRUCTION.md
+.claude/
 .env
 .env.*
 *.log
