@@ -218,15 +218,19 @@ const SPEECH_CUES = {
   },
 };
 
-const CORRECT_CUE_IDS = ["correctJa", "correctSuper", "correctKlasse", "correctStrong"];
+const CORRECT_CUE_IDS = ["correctJa", "correctSuper", "correctStrong"];
 const INITIAL_PENDING_REWARD_OFFER = loadPendingRewardOffer();
 
 function createTask(selectedTables, previousTask) {
   const pool = selectedTables.length ? selectedTables : TABLES;
+  // When only one table is selected, let b range over all 0–10 so the full
+  // table is practised.  When multiple tables are selected, restrict b to
+  // the same pool so children only see numbers they chose.
+  const bPool = pool.length > 1 ? pool : TABLES;
 
   for (let attempt = 0; attempt < 40; attempt += 1) {
     const a = pool[Math.floor(Math.random() * pool.length)];
-    const b = Math.floor(Math.random() * 11);
+    const b = bPool[Math.floor(Math.random() * bPool.length)];
     const task = { a, b, answer: a * b };
 
     if (!previousTask || previousTask.a !== task.a || previousTask.b !== task.b) {
@@ -235,7 +239,7 @@ function createTask(selectedTables, previousTask) {
   }
 
   const a = pool[Math.floor(Math.random() * pool.length)];
-  const b = Math.floor(Math.random() * 11);
+  const b = bPool[Math.floor(Math.random() * bPool.length)];
   return { a, b, answer: a * b };
 }
 
