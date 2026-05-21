@@ -49,7 +49,7 @@ export default function CollectionView({ unlockedIds, bonusStars = 0, onClose, o
               )}
               <strong>{isUnlocked ? reward.name : "Noch geheim"}</strong>
               <span>{isUnlocked ? reward.species : "Schaffe 10 von 10"}</span>
-              {isUnlocked ? <small>Tippe auf den Dino fuer das Video</small> : null}
+              {isUnlocked ? <small>Tippe auf den Dino für das Video</small> : null}
             </article>
           );
         })}

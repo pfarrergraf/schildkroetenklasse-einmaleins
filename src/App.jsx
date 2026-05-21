@@ -1846,7 +1846,7 @@ export default function App() {
                     onClick={() => setTypedModeOptOut(true)}
                     disabled={isChecking}
                   >
-                    Spaeter
+                    Später
                   </button>
                 </div>
               </div>

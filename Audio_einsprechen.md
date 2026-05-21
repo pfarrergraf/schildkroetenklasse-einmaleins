@@ -1,6 +1,6 @@
 # Audio einsprechen
 
-Die App ist bereits so verdrahtet, dass sie neue Sprachdateien automatisch nutzt, sobald sie unter [public/audio](C:/ai/schildkroetenklasse-einmaleins-pwa/samuel-einmaleins-pwa/public/audio) liegen. Solange Dateien fehlen, faellt die App sauber auf Sprechblase + Textfeedback zurueck.
+Die App ist bereits so verdrahtet, dass sie neue Sprachdateien automatisch nutzt, sobald sie unter [public/audio](C:/ai/schildkroetenklasse-einmaleins-pwa/samuel-einmaleins-pwa/public/audio) liegen. Solange Dateien fehlen, fällt die App sauber auf Sprechblase + Textfeedback zurück.
 
 Bereits vorhanden und verdrahtet:
 - Start, Ready, Input-Warnung, mehrere Lob-Cues, Finish-Cues
@@ -16,12 +16,12 @@ Neu verdrahtet und jetzt mit Datei vorgesehen:
 - `typedUnlocked`: [Neue Herausforderung freigeschaltet Tippen.wav](C:/ai/schildkroetenklasse-einmaleins-pwa/samuel-einmaleins-pwa/public/audio/Neue%20Herausforderung%20freigeschaltet%20Tippen.wav)
 - `typedUnlocked` alternativ: [Neue Herausforderung freigeschaltet Tippen.mp3](C:/ai/schildkroetenklasse-einmaleins-pwa/samuel-einmaleins-pwa/public/audio/Neue%20Herausforderung%20freigeschaltet%20Tippen.mp3)
 
-Empfohlene Reihenfolge, falls spaeter weitere Varianten dazukommen:
+Empfohlene Reihenfolge, falls später weitere Varianten dazukommen:
 1. `wrongGentle`
 2. `wrongSteady`
 3. `typedUnlocked`
 4. `typedCelebrate`
 
-Hinweis fuer spaeter:
+Hinweis für später:
 - Eine Datei pro Cue reicht. Die App probiert erst `.wav`, dann `.mp3`, falls beides eingetragen ist.
-- Die Dateinamen muessen exakt so bleiben wie oben, dann ist kein weiterer Codeaenderungsbedarf noetig.
+- Die Dateinamen müssen exakt so bleiben wie oben, dann ist kein weiterer Codeänderungsbedarf nötig.
