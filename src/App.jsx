@@ -1781,29 +1781,31 @@ export default function App() {
             </div>
 
             <div className="game-status-strip" aria-label="Aktueller Spielstatus">
-              <div className="game-status-pill">
+              <div className="game-status-pill game-status-pill-round">
                 <span>Runde</span>
                 <strong>{Math.min(round + (gameFinished ? 0 : 1), ROUNDS_PER_GAME)}/{ROUNDS_PER_GAME}</strong>
               </div>
-              <div className="game-status-pill">
+              <div className="game-status-pill game-status-pill-score">
                 <span>Punkte</span>
                 <strong>{score}/{ROUNDS_PER_GAME}</strong>
               </div>
-              <div className="game-status-pill">
+              <div className="game-status-pill game-status-pill-tables">
                 <span>Reihen</span>
                 <strong>{selectedTables.join(", ")}</strong>
               </div>
               {activeChallenge ? (
-                <div className="game-status-pill challenge">
+                <div className="game-status-pill game-status-pill-challenge challenge">
                   <span>Challenge</span>
                   <strong>{activeChallenge.shortTitle}</strong>
                 </div>
               ) : null}
             </div>
 
-            <div className={`feedback ${lastWasCorrect === true ? "correct" : lastWasCorrect === false ? "wrong" : "neutral"}`}>
-              {feedback}
-            </div>
+            {lastWasCorrect !== null ? (
+              <div className={`feedback ${lastWasCorrect ? "correct" : "wrong"}`}>
+                {feedback}
+              </div>
+            ) : null}
 
             <div className="answer-mode-toggle" role="group" aria-label="Antwortmodus">
               <button

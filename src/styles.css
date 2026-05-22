@@ -39,7 +39,6 @@ input {
 
 button {
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 
 button:disabled {
@@ -810,6 +809,9 @@ h1 {
 }
 
 .game-status-pill {
+  display: grid;
+  gap: 2px;
+  align-content: start;
   min-height: 46px;
   padding: 8px 12px;
   border-radius: 16px;
@@ -870,6 +872,7 @@ h1 {
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin-bottom: 10px;
+  touch-action: manipulation;
 }
 
 .answer-button {
@@ -881,6 +884,7 @@ h1 {
   box-shadow: 0 14px 28px rgba(17, 24, 46, 0.22);
   font-size: clamp(1.8rem, 6vw, 2.6rem);
   font-weight: 900;
+  touch-action: manipulation;
   transition: transform 140ms ease, background 140ms ease, box-shadow 140ms ease;
 }
 
@@ -961,12 +965,6 @@ h1 {
   text-align: center;
   font-size: 0.98rem;
   font-weight: 850;
-}
-
-.feedback.neutral {
-  color: #3c584b;
-  background: #f4faf4;
-  border: 1px solid #dceadf;
 }
 
 .feedback.correct {
@@ -1267,6 +1265,42 @@ h1 {
   .game-status-strip {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .game-status-pill {
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 14px;
+  }
+
+  .game-status-pill span,
+  .game-status-pill strong {
+    display: inline;
+  }
+
+  .game-status-pill span {
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  .game-status-pill strong {
+    min-width: 0;
+    margin-top: 0;
+    font-size: 0.88rem;
+    line-height: 1.15;
+    text-align: right;
+  }
+
+  .game-status-pill-tables,
+  .game-status-pill-challenge {
+    grid-column: 1 / -1;
   }
 
   .task-card p {
@@ -1311,7 +1345,7 @@ h1 {
   }
 
   .answer-button {
-    min-height: 62px;
+    min-height: 55px;
     border-radius: 20px;
     font-size: clamp(1.55rem, 6vw, 2.1rem);
   }
@@ -1340,6 +1374,69 @@ h1 {
     padding: 12px;
     border-radius: 24px;
     max-height: min(74vh, 640px);
+  }
+}
+
+@media (pointer: coarse) and (max-height: 560px) and (orientation: landscape) {
+  .app-shell {
+    padding: 6px 6px calc(10px + var(--safe-bottom));
+  }
+
+  .game-card,
+  .settings-card {
+    padding: 12px;
+    border-radius: 26px;
+    box-shadow: 0 18px 36px rgba(47, 86, 65, 0.12);
+    backdrop-filter: none;
+  }
+
+  .play-panel {
+    min-height: auto;
+  }
+
+  .turtle-panel {
+    grid-template-columns: minmax(0, 1fr) 200px;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .turtle-speech {
+    min-height: 64px;
+    padding: 12px 14px;
+    font-size: clamp(0.92rem, 1.8vw, 1.02rem);
+  }
+
+  .turtle-stage {
+    min-height: 160px;
+  }
+
+  .game-status-strip {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .game-status-pill {
+    min-height: 0;
+    padding: 7px 10px;
+  }
+
+  .task-card {
+    padding: 12px 10px;
+  }
+
+  .task-card div {
+    font-size: clamp(3rem, 10vw, 4.2rem);
+  }
+
+  .answer-button {
+    min-height: 55px;
+    font-size: clamp(1.45rem, 3.8vw, 1.95rem);
+  }
+
+  .mobile-menu-toggle {
+    min-width: 118px;
+    min-height: 44px;
+    padding: 9px 14px;
   }
 }
 
