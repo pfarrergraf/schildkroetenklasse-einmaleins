@@ -465,8 +465,7 @@ export default function App() {
   const [options, setOptions] = useState(() => {
     const op = loadActiveOperation();
     if (op !== "multiplication") {
-      const t = createTask(loadSelectedTables(), null, op, loadActiveLevel(op) ?? getDefaultLevelId(op));
-      return generateOperationOptions(t);
+      return generateOperationOptions(task);
     }
     return createOptions(task, loadLearningState(), {
       round: 0,

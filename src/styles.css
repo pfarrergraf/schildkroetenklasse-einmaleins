@@ -1215,6 +1215,8 @@ h1 {
   .play-panel {
     /* dvh berücksichtigt Tastatur-Einblendung korrekt */
     min-height: calc(100dvh - 12px - var(--safe-bottom));
+    /* Platz für den fixierten Menü-Button am unteren Rand */
+    padding-bottom: 72px;
   }
 
   .turtle-panel {
