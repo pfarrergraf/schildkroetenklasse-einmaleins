@@ -375,10 +375,10 @@ h1 {
 .turtle-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 225px;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
-  margin-bottom: 12px;
-  padding: 12px;
+  margin-bottom: 8px;
+  padding: 6px;
   border-radius: 24px;
   background:
     radial-gradient(circle at 28% 50%, rgba(214, 255, 183, 0.58) 0, transparent 24rem),
@@ -1222,9 +1222,9 @@ h1 {
   .turtle-panel {
     grid-template-columns: 1fr;
     justify-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-    padding: 12px;
+    gap: 6px;
+    margin-bottom: 8px;
+    padding: 6px;
     border-radius: 24px;
   }
 
@@ -1606,21 +1606,26 @@ h1 {
   }
 }
 
-/* ── Cockpit-Bar: Op + Level + Status in einer Zeile ─────────────────────── */
+/* ── Cockpit-Bar: eigene Zeile für Rechenarten, eigene Zeile für Level/Status ── */
 .cockpit-bar {
   display: flex;
   align-items: center;
   gap: 6px;
   margin-bottom: 8px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   min-height: 40px;
 }
 
-/* Op-Buttons: nur Symbol, quadratisch kompakt */
+/* Op-Buttons: eigene volle Zeile, gleichmäßig verteilt */
 .cockpit-ops {
   display: flex;
-  gap: 4px;
-  flex-shrink: 0;
+  gap: 6px;
+  flex: 1 0 100%;
+  justify-content: stretch;
+}
+
+.cockpit-ops .cockpit-op-btn {
+  flex: 1;
 }
 
 .cockpit-op-btn {
