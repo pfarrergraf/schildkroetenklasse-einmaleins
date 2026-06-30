@@ -207,8 +207,8 @@ export const OPERATIONS = {
 
 // Which operations are available per school class (Klasse)
 export const CLASS_OPERATIONS = {
-  1: ["addition", "subtraction"],
-  2: ["addition", "subtraction", "multiplication"],
+  1: ["addition", "subtraction", "multiplication", "division"],
+  2: ["addition", "subtraction", "multiplication", "division"],
   3: ["addition", "subtraction", "multiplication", "division"],
   4: ["addition", "subtraction", "multiplication", "division"],
 };
