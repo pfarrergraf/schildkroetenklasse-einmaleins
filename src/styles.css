@@ -6,6 +6,7 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
   --ink: #173028;
   --green-deep: #2f6b49;
   --green: #55a85c;
@@ -158,21 +159,23 @@ h1 {
 
 .mobile-menu-toggle {
   position: fixed;
-  right: 16px;
-  bottom: calc(16px + var(--safe-bottom));
+  top: calc(10px + var(--safe-top));
+  right: 10px;
+  bottom: auto;
   z-index: 40;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 132px;
-  min-height: 50px;
-  padding: 10px 18px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 14px;
   border: 0;
   border-radius: 999px;
   color: #ffffff;
   background: linear-gradient(145deg, #244c3f, #173028);
-  box-shadow: 0 18px 32px rgba(23, 48, 40, 0.22);
+  box-shadow: 0 12px 24px rgba(23, 48, 40, 0.22);
   font-weight: 900;
+  font-size: 0.85rem;
 }
 
 .mobile-utility-drawer {
@@ -289,6 +292,8 @@ h1 {
 
 .play-panel {
   padding: 14px;
+  /* Platz für den fixierten Menü-Button oben rechts */
+  padding-top: calc(58px + var(--safe-top));
 }
 
 .game-card,
@@ -1188,8 +1193,8 @@ h1 {
 
 @media (max-width: 860px) {
   .mobile-menu-toggle {
-    right: 14px;
-    bottom: calc(14px + var(--safe-bottom));
+    top: calc(8px + var(--safe-top));
+    right: 8px;
   }
 
   .mobile-utility-drawer {
@@ -1215,8 +1220,8 @@ h1 {
   .play-panel {
     /* dvh berücksichtigt Tastatur-Einblendung korrekt */
     min-height: calc(100dvh - 12px - var(--safe-bottom));
-    /* Platz für den fixierten Menü-Button am unteren Rand */
-    padding-bottom: 72px;
+    /* Platz für den fixierten Menü-Button oben rechts */
+    padding-top: calc(52px + var(--safe-top));
   }
 
   .turtle-panel {
@@ -1403,11 +1408,11 @@ h1 {
   }
 
   .mobile-menu-toggle {
-    right: 10px;
-    bottom: calc(10px + var(--safe-bottom));
-    min-width: 120px;
-    min-height: 46px;
-    padding: 10px 16px;
+    top: calc(8px + var(--safe-top));
+    right: 8px;
+    min-height: 42px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
   }
 
   .mobile-utility-drawer {
