@@ -553,11 +553,6 @@ export default function App() {
     () => buildTypedModeRecommendation({ learningState, streak, selectedTables }),
     [learningState, selectedTables, streak]
   );
-  const showTypedModeCoach =
-    !gameFinished &&
-    answerMode === ANSWER_MODES.CHOICE &&
-    !typedModeOptOut &&
-    typedModeRecommendation.shouldSuggest;
   const currentScene = SCENES[turtleScene] ?? SCENES.hello;
   const currentFrame = currentScene.frames[frameIndex % currentScene.frames.length] ?? currentScene.frames[0];
   const rewardBackendStatusText = useMemo(() => getRewardBackendStatusText(rewardBackendStatus), [rewardBackendStatus]);
@@ -1101,7 +1096,6 @@ export default function App() {
         speaking: isSpeaking,
         lastSpeechMode,
         lastCueId,
-        typedModeSuggested: showTypedModeCoach,
         typedModeRecommendation: typedModeRecommendation.headline,
         rewardBackendMode: rewardBackendStatus.activeMode,
         rewardBackendTransport: rewardBackendStatus.transport,
@@ -1135,7 +1129,6 @@ export default function App() {
     streak,
     task,
     typedModeRecommendation.headline,
-    showTypedModeCoach,
     turtleScene,
     turtleSpeech,
     typedAnswer,
@@ -1980,32 +1973,6 @@ export default function App() {
                 Tippen
               </button>
             </div>
-
-            {showTypedModeCoach ? (
-              <div className="typed-mode-coach" data-testid="typed-mode-coach">
-                <strong>{typedModeRecommendation.headline}</strong>
-                <p>{typedModeRecommendation.body}</p>
-                <span>{typedModeRecommendation.reason}</span>
-                <div className="typed-mode-actions">
-                  <button
-                    type="button"
-                    className="submit-button"
-                    onClick={() => setAnswerMode(ANSWER_MODES.TYPED, { manual: true, announce: true })}
-                    disabled={isChecking}
-                  >
-                    Jetzt tippen
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => setTypedModeOptOut(true)}
-                    disabled={isChecking}
-                  >
-                    Später
-                  </button>
-                </div>
-              </div>
-            ) : null}
 
             {!gameFinished ? (
               <>
