@@ -1885,89 +1885,70 @@ export default function App() {
               </div>
             </div>
 
-            {/* Operation Selector */}
-            <div className="operation-selector" role="group" aria-label="Rechenart wählen">
-              {CLASS_OPERATIONS[schoolClass]?.map((opId) => {
-                const op = OPERATIONS[opId];
+            {/* Kompaktes Cockpit: Operation + Level + Status in einer Zeile */}
+            <div className="cockpit-bar">
+              {/* Operation-Buttons: nur Symbol */}
+              <div className="cockpit-ops" role="group" aria-label="Rechenart">
+                {CLASS_OPERATIONS[schoolClass]?.map((opId) => {
+                  const op = OPERATIONS[opId];
+                  return (
+                    <button
+                      key={opId}
+                      type="button"
+                      className={`cockpit-op-btn${activeOperation === opId ? " active" : ""}`}
+                      aria-pressed={activeOperation === opId}
+                      onClick={() => switchOperation(opId)}
+                      aria-label={op.label}
+                      disabled={isChecking}
+                    >
+                      {op.symbol}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Level-Chip: aktuelles Level mit Tap zum Wechseln */}
+              {(() => {
+                const op = OPERATIONS[activeOperation];
+                if (!op) return null;
+                const currentLvlIdx = op.levels.findIndex((l) => l.id === activeLevelId);
+                const currentLvl = op.levels[currentLvlIdx] ?? op.levels[0];
+                const prevLvl = currentLvlIdx > 0 ? op.levels[currentLvlIdx - 1] : null;
+                const nextLvl = currentLvlIdx < op.levels.length - 1 ? op.levels[currentLvlIdx + 1] : null;
+                const nextUnlocked = nextLvl && (currentLvlIdx + 1 === 0 || unlockedLevels.includes(nextLvl.id));
                 return (
-                  <button
-                    key={opId}
-                    type="button"
-                    className={`operation-btn${activeOperation === opId ? " active" : ""}`}
-                    aria-pressed={activeOperation === opId}
-                    onClick={() => switchOperation(opId)}
-                    title={op.label}
-                    disabled={isChecking}
-                  >
-                    <span className="operation-symbol">{op.symbol}</span>
-                    <span className="operation-label">{op.label}</span>
-                  </button>
+                  <div className="cockpit-level">
+                    <button
+                      type="button"
+                      className="cockpit-level-prev"
+                      onClick={() => prevLvl && switchLevel(prevLvl.id)}
+                      disabled={!prevLvl || isChecking}
+                      aria-label="Vorheriges Level"
+                    >‹</button>
+                    <span className="cockpit-level-label" title={currentLvl?.description}>
+                      {currentLvl?.label ?? "–"}
+                    </span>
+                    <button
+                      type="button"
+                      className="cockpit-level-next"
+                      onClick={() => nextLvl && nextUnlocked && switchLevel(nextLvl.id)}
+                      disabled={!nextLvl || !nextUnlocked || isChecking}
+                      aria-label="Nächstes Level"
+                    >›</button>
+                  </div>
                 );
-              })}
-            </div>
+              })()}
 
-            {/* Level Selector */}
-            {(() => {
-              const op = OPERATIONS[activeOperation];
-              if (!op) return null;
-              return (
-                <div className="level-selector" role="group" aria-label="Level wählen">
-                  {op.levels.map((lvl, idx) => {
-                    const isUnlocked = idx === 0 || unlockedLevels.includes(lvl.id);
-                    const isActive = activeLevelId === lvl.id;
-                    return (
-                      <button
-                        key={lvl.id}
-                        type="button"
-                        className={`level-btn${isActive ? " active" : ""}${!isUnlocked ? " locked" : ""}`}
-                        aria-pressed={isActive}
-                        onClick={() => isUnlocked && switchLevel(lvl.id)}
-                        title={isUnlocked ? lvl.description : "Noch gesperrt – erst vorherige Stufe meistern!"}
-                        disabled={isChecking || !isUnlocked}
-                      >
-                        {!isUnlocked ? "🔒" : isActive ? "▶ " : ""}{lvl.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-
-            <div className="game-status-strip" aria-label="Aktueller Spielstatus">
-              <div className="game-status-pill game-status-pill-round">
-                <span>Runde</span>
-                <strong>{Math.min(round + (gameFinished ? 0 : 1), ROUNDS_PER_GAME)}/{ROUNDS_PER_GAME}</strong>
+              {/* Status-Chips: Runde / Punkte / Streak */}
+              <div className="cockpit-status">
+                <span className="cockpit-chip">{Math.min(round + (gameFinished ? 0 : 1), ROUNDS_PER_GAME)}/{ROUNDS_PER_GAME}</span>
+                <span className="cockpit-chip cockpit-chip-score">{score} ✓</span>
+                {streak >= 3 ? <span className="cockpit-chip cockpit-chip-streak">🔥{streak}</span> : null}
               </div>
-              <div className="game-status-pill game-status-pill-score">
-                <span>Punkte</span>
-                <strong>{score}/{ROUNDS_PER_GAME}</strong>
-              </div>
-              {activeOperation === "multiplication" ? (
-                <div className="game-status-pill game-status-pill-tables">
-                  <span>Reihen</span>
-                  <strong>{selectedTables.join(", ")}</strong>
-                </div>
-              ) : null}
-              {streak >= 3 ? (
-                <div className="game-status-pill game-status-pill-streak streak-hot">
-                  <span>Serie</span>
-                  <strong>🔥 {streak}</strong>
-                </div>
-              ) : null}
-              {activeChallenge ? (
-                <div className="game-status-pill game-status-pill-challenge challenge">
-                  <span>Challenge</span>
-                  <strong>{activeChallenge.shortTitle}</strong>
-                </div>
-              ) : null}
             </div>
 
             {/* Fortschrittsbalken */}
             <div className="round-progress-bar" aria-hidden="true">
-              <div
-                className="round-progress-fill"
-                style={{ width: `${Math.round((round / ROUNDS_PER_GAME) * 100)}%` }}
-              />
               {Array.from({ length: ROUNDS_PER_GAME }, (_, i) => (
                 <div key={i} className={`round-dot${i < round ? (i < score ? " correct" : " wrong") : ""}`} />
               ))}

@@ -1213,7 +1213,8 @@ h1 {
   }
 
   .play-panel {
-    min-height: calc(100vh - 12px - var(--safe-bottom));
+    /* dvh berücksichtigt Tastatur-Einblendung korrekt */
+    min-height: calc(100dvh - 12px - var(--safe-bottom));
   }
 
   .turtle-panel {
@@ -1440,6 +1441,105 @@ h1 {
   }
 }
 
+/* ── Tastatur offen / sehr kleiner Viewport ──────────────────────────────── */
+/* Greift wenn der Browser-Viewport < 480px hoch ist (Softwaretastatur offen) */
+@media (max-height: 480px) {
+  .play-panel {
+    min-height: 0;
+  }
+
+  /* Turtle-Bild komplett verstecken, nur Sprechblase bleibt */
+  .turtle-stage {
+    display: none !important;
+  }
+
+  .turtle-panel {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border-radius: 14px;
+  }
+
+  .turtle-speech {
+    min-height: 0;
+    padding: 8px 12px;
+    font-size: 0.88rem;
+    border-radius: 12px;
+  }
+
+  .turtle-speech::after {
+    display: none;
+  }
+
+  .cockpit-bar {
+    margin-bottom: 5px;
+    min-height: 34px;
+  }
+
+  .cockpit-op-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+
+  .cockpit-level {
+    height: 32px;
+  }
+
+  .cockpit-chip {
+    height: 28px;
+    padding: 0 6px;
+    font-size: 0.75rem;
+  }
+
+  .round-progress-bar {
+    height: 12px;
+    margin-bottom: 5px;
+    gap: 4px;
+  }
+
+  .round-dot {
+    width: 8px;
+    height: 8px;
+  }
+
+  .task-card {
+    padding: 10px 8px;
+    margin-bottom: 8px;
+    border-radius: 16px;
+  }
+
+  .task-card p {
+    display: none;
+  }
+
+  .task-card div {
+    font-size: clamp(2.2rem, 8vw, 3rem) !important;
+  }
+
+  .answer-button {
+    min-height: 52px !important;
+    font-size: clamp(1.3rem, 4vw, 1.6rem) !important;
+  }
+
+  .answer-mode-toggle {
+    display: none;
+  }
+
+  .feedback {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+}
+
+/* ── Sehr schmaler + kleiner Viewport (Landscape Mobile mit Tastatur) ─────── */
+@media (max-height: 380px) {
+  .turtle-panel {
+    display: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .turtle-image,
   .turtle-card,
@@ -1460,135 +1560,159 @@ h1 {
   }
 }
 
-/* ── Grundrechenarten: Operation Selector ────────────────────────────────── */
-.operation-selector {
+/* ── Cockpit-Bar: Op + Level + Status in einer Zeile ─────────────────────── */
+.cockpit-bar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.operation-btn {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  min-width: 64px;
-  min-height: 52px;
-  padding: 8px 10px;
-  border-radius: 14px;
-  border: 2px solid rgba(85, 133, 103, 0.2);
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--ink);
-  font-weight: 700;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: nowrap;
+  min-height: 40px;
 }
 
-.operation-btn:hover:not(:disabled) {
+/* Op-Buttons: nur Symbol, quadratisch kompakt */
+.cockpit-ops {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.cockpit-op-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 2px solid rgba(85, 133, 103, 0.2);
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 1.1rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.cockpit-op-btn:hover:not(:disabled) {
   background: var(--green-soft);
   border-color: var(--green);
 }
 
-.operation-btn.active {
+.cockpit-op-btn.active {
   background: var(--green);
   border-color: var(--green-deep);
   color: #fff;
 }
 
-.operation-symbol {
-  font-size: 1.3rem;
-  line-height: 1;
-}
-
-.operation-label {
-  font-size: 0.65rem;
-  font-weight: 900;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-/* ── Level Selector ─────────────────────────────────────────────────────── */
-.level-selector {
+/* Level-Chip: ‹ Label › */
+.cockpit-level {
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 10px;
-}
-
-.level-btn {
-  min-height: 36px;
-  padding: 5px 12px;
-  border-radius: 20px;
-  border: 1.5px solid rgba(85, 133, 103, 0.2);
-  background: rgba(255, 255, 255, 0.85);
-  color: var(--ink);
-  font-size: 0.8rem;
-  font-weight: 700;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.level-btn:hover:not(:disabled):not(.locked) {
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
   background: var(--sun-soft);
-  border-color: var(--sun);
+  border: 1.5px solid rgba(220, 175, 0, 0.3);
+  border-radius: 20px;
+  padding: 0 4px;
+  height: 36px;
+  overflow: hidden;
 }
 
-.level-btn.active {
-  background: var(--sun);
-  border-color: #e5a800;
-  color: #3d2800;
+.cockpit-level-prev,
+.cockpit-level-next {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #7a6000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 0;
+  transition: background 0.1s;
 }
 
-.level-btn.locked {
-  color: #aaa;
-  background: #f5f5f0;
-  border-color: #ddd;
-  cursor: not-allowed;
+.cockpit-level-prev:hover:not(:disabled),
+.cockpit-level-next:hover:not(:disabled) {
+  background: rgba(0,0,0,0.07);
 }
 
-/* ── Streak Pill ─────────────────────────────────────────────────────────── */
-.game-status-pill.streak-hot {
-  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-  border-color: rgba(255, 140, 0, 0.35);
+.cockpit-level-prev:disabled,
+.cockpit-level-next:disabled {
+  color: #ccc;
+}
+
+.cockpit-level-label {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #5a4400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Status-Chips */
+.cockpit-status {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.cockpit-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1.5px solid rgba(85, 133, 103, 0.18);
+  font-size: 0.8rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.cockpit-chip-score {
+  background: var(--green-soft);
+  border-color: rgba(85, 168, 92, 0.3);
+  color: var(--green-deep);
+}
+
+.cockpit-chip-streak {
+  background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+  border-color: rgba(255, 140, 0, 0.3);
   animation: streakPulse 1.2s ease-in-out infinite;
 }
 
 @keyframes streakPulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.04); }
+  50% { transform: scale(1.06); }
 }
 
-/* ── Progress Bar ────────────────────────────────────────────────────────── */
+/* ── Progress Dots ───────────────────────────────────────────────────────── */
 .round-progress-bar {
-  position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
-  height: 20px;
-  margin-bottom: 10px;
-  padding: 0 2px;
-}
-
-.round-progress-fill {
-  position: absolute;
-  left: 0;
-  top: 7px;
-  height: 6px;
-  border-radius: 3px;
-  background: linear-gradient(90deg, var(--green) 0%, var(--sun) 100%);
-  transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  z-index: 0;
+  justify-content: center;
+  gap: 5px;
+  height: 16px;
+  margin-bottom: 8px;
 }
 
 .round-dot {
-  position: relative;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  border: 2px solid rgba(85, 133, 103, 0.25);
+  border: 2px solid rgba(85, 133, 103, 0.22);
   background: #fff;
-  z-index: 1;
   flex-shrink: 0;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background 0.18s, border-color 0.18s;
 }
 
 .round-dot.correct {
