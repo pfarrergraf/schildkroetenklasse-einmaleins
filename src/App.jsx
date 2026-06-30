@@ -1,4 +1,24 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  OPERATIONS,
+  CLASS_OPERATIONS,
+  CLASS_LABELS,
+  getDefaultLevelId,
+  getNextLevelId,
+  isLastLevel,
+  getLevelById,
+  generateTask as generateOpTask,
+  generateOperationOptions,
+  getAnswerRange,
+  loadUnlockedLevels,
+  unlockLevel,
+  loadActiveOperation,
+  saveActiveOperation,
+  loadActiveLevel,
+  saveActiveLevel,
+  loadSchoolClass,
+  saveSchoolClass,
+} from "./features/operations";
 import {
   CollectionView,
   RewardChoiceModal,
@@ -258,26 +278,9 @@ function getInitialAnswerMode() {
   return ANSWER_MODES.CHOICE;
 }
 
-function createTask(selectedTables, previousTask) {
-  const pool = selectedTables.length ? selectedTables : TABLES;
-  // When only one table is selected, let b range over all 0–10 so the full
-  // table is practised.  When multiple tables are selected, restrict b to
-  // the same pool so children only see numbers they chose.
-  const bPool = pool.length > 1 ? pool : TABLES;
-
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    const a = pool[Math.floor(Math.random() * pool.length)];
-    const b = bPool[Math.floor(Math.random() * bPool.length)];
-    const task = { a, b, answer: a * b };
-
-    if (!previousTask || previousTask.a !== task.a || previousTask.b !== task.b) {
-      return task;
-    }
-  }
-
-  const a = pool[Math.floor(Math.random() * pool.length)];
-  const b = bPool[Math.floor(Math.random() * bPool.length)];
-  return { a, b, answer: a * b };
+function createTask(selectedTables, previousTask, operationId = "multiplication", levelId = null) {
+  const effectiveLevelId = levelId ?? getDefaultLevelId(operationId);
+  return generateOpTask(operationId, effectiveLevelId, previousTask, selectedTables);
 }
 
 function createOptions(task, learningState, { round = 0, streak = 0, consecutivePerfectRounds = 0 } = {}) {
@@ -454,14 +457,23 @@ function saveSelectedTables(selectedTables) {
 
 export default function App() {
   const [selectedTables, setSelectedTables] = useState(() => loadSelectedTables());
-  const [task, setTask] = useState(() => createTask(loadSelectedTables()));
-  const [options, setOptions] = useState(() =>
-    createOptions(task, loadLearningState(), {
+  const [task, setTask] = useState(() => {
+    const op = loadActiveOperation();
+    const lvl = loadActiveLevel(op) ?? getDefaultLevelId(op);
+    return createTask(loadSelectedTables(), null, op, lvl);
+  });
+  const [options, setOptions] = useState(() => {
+    const op = loadActiveOperation();
+    if (op !== "multiplication") {
+      const t = createTask(loadSelectedTables(), null, op, loadActiveLevel(op) ?? getDefaultLevelId(op));
+      return generateOperationOptions(t);
+    }
+    return createOptions(task, loadLearningState(), {
       round: 0,
       streak: 0,
       consecutivePerfectRounds: loadConsecutivePerfectRounds(),
-    })
-  );
+    });
+  });
   const [typedAnswer, setTypedAnswer] = useState("");
   const [score, setScore] = useState(0);
   const [round, setRound] = useState(0);
@@ -499,6 +511,17 @@ export default function App() {
   const [showTableSelector, setShowTableSelector] = useState(false);
   const [rewardTriggerTitle, setRewardTriggerTitle] = useState(null);
   const [tableCoachPromptVisible, setTableCoachPromptVisible] = useState(false);
+
+  // ── Grundrechenarten & Level-System ──────────────────────────────────────
+  const [schoolClass, setSchoolClassState] = useState(() => loadSchoolClass());
+  const [activeOperation, setActiveOperationState] = useState(() => loadActiveOperation());
+  const [activeLevelId, setActiveLevelIdState] = useState(() => {
+    const op = loadActiveOperation();
+    return loadActiveLevel(op) ?? getDefaultLevelId(op);
+  });
+  const [unlockedLevels, setUnlockedLevels] = useState(() => loadUnlockedLevels());
+  const [levelUnlockBanner, setLevelUnlockBanner] = useState(null); // { levelLabel, nextLevelLabel }
+  const [operationSelectorOpen, setOperationSelectorOpen] = useState(false);
   const skipTableToggleClickRef = useRef(null);
   const inputRef = useRef(null);
   const answerTimerRef = useRef(null);
@@ -576,11 +599,18 @@ export default function App() {
   }
 
   function buildChoiceOptions(nextTask, overrides = {}) {
+    if (activeOperation !== "multiplication") {
+      return generateOperationOptions(nextTask);
+    }
     return createOptions(nextTask, overrides.learningState ?? learningState, {
       round: overrides.round ?? round,
       streak: overrides.streak ?? streak,
       consecutivePerfectRounds: overrides.consecutivePerfectRounds ?? consecutivePerfectRounds,
     });
+  }
+
+  function buildNextTask(previousTask) {
+    return createTask(selectedTables, previousTask, activeOperation, activeLevelId);
   }
 
   async function persistRewardState(overrides = {}, event = null) {
@@ -1266,7 +1296,7 @@ export default function App() {
 
   function nextTask() {
     flowTokenRef.current += 1;
-    const next = createTask(selectedTables, task);
+    const next = buildNextTask(task);
     taskHadMistakeRef.current = false;
     setTask(next);
     setOptions(buildChoiceOptions(next));
@@ -1287,6 +1317,26 @@ export default function App() {
     setGameFinished(true);
     setTableCoachPromptVisible(strongFinish || finalScore === ROUNDS_PER_GAME);
     setFeedback(`Fertig! Du hast ${finalScore} von ${ROUNDS_PER_GAME} Aufgaben richtig gelöst.`);
+
+    // Level-Freischaltung: Bei ≥ 8/10 wird das nächste Level freigeschaltet
+    if (finalScore >= 8) {
+      const currentLevelId = activeLevelId ?? getDefaultLevelId(activeOperation);
+      unlockLevel(currentLevelId);
+      setUnlockedLevels(loadUnlockedLevels());
+
+      const nextLvlId = getNextLevelId(activeOperation, currentLevelId);
+      if (nextLvlId) {
+        const currentLevel = getLevelById(activeOperation, currentLevelId);
+        const nextLevel = getLevelById(activeOperation, nextLvlId);
+        unlockLevel(nextLvlId);
+        setUnlockedLevels(loadUnlockedLevels());
+        setLevelUnlockBanner({
+          levelLabel: currentLevel?.label ?? currentLevelId,
+          nextLevelId: nextLvlId,
+          nextLevelLabel: nextLevel?.label ?? nextLvlId,
+        });
+      }
+    }
     setRewardedTableCount(nextRewardedTableCount);
     saveRewardedTableCount(nextRewardedTableCount);
 
@@ -1503,7 +1553,7 @@ export default function App() {
       return;
     }
 
-    const next = createTask(selectedTables, task);
+    const next = buildNextTask(task);
     taskHadMistakeRef.current = false;
     setTask(next);
     setOptions(
@@ -1529,14 +1579,16 @@ export default function App() {
     stopCurrentAudio();
     window.speechSynthesis?.cancel();
 
-    const firstTask = createTask(selectedTables);
+    const firstTask = createTask(selectedTables, null, activeOperation, activeLevelId);
     setTask(firstTask);
     setOptions(
-      createOptions(firstTask, learningState, {
-        round: 0,
-        streak: 0,
-        consecutivePerfectRounds,
-      })
+      activeOperation !== "multiplication"
+        ? generateOperationOptions(firstTask)
+        : createOptions(firstTask, learningState, {
+            round: 0,
+            streak: 0,
+            consecutivePerfectRounds,
+          })
     );
     setTypedAnswer("");
     setScore(0);
@@ -1678,7 +1730,7 @@ export default function App() {
       if (sanitized.length > 0) {
         saveSelectedTables(sanitized);
         setSelectedTables(sanitized);
-        const challengeTask = createTask(sanitized);
+        const challengeTask = createTask(sanitized, null, activeOperation, activeLevelId);
         setTask(challengeTask);
         setOptions(buildChoiceOptions(challengeTask));
       }
@@ -1690,6 +1742,59 @@ export default function App() {
       startCueUnlockedRef.current = true;
     }
     void playCue(lastCueId);
+  }
+
+  function switchOperation(opId) {
+    if (!OPERATIONS[opId]) return;
+    const lvl = loadActiveLevel(opId) ?? getDefaultLevelId(opId);
+    saveActiveOperation(opId);
+    saveActiveLevel(opId, lvl);
+    setActiveOperationState(opId);
+    setActiveLevelIdState(lvl);
+    setOperationSelectorOpen(false);
+
+    // Reset game for new operation
+    flowTokenRef.current += 1;
+    clearAnswerTimer();
+    stopCurrentAudio();
+    const firstTask = createTask(selectedTables, null, opId, lvl);
+    setTask(firstTask);
+    setOptions(opId !== "multiplication" ? generateOperationOptions(firstTask) : createOptions(firstTask, learningState, { round: 0, streak: 0, consecutivePerfectRounds }));
+    setTypedAnswer("");
+    setScore(0);
+    setRound(0);
+    setStreak(0);
+    setFeedback(getModeIntroFeedback(answerMode));
+    setLastWasCorrect(null);
+    setGameFinished(false);
+    setIsChecking(false);
+  }
+
+  function switchLevel(levelId) {
+    saveActiveLevel(activeOperation, levelId);
+    setActiveLevelIdState(levelId);
+    setLevelUnlockBanner(null);
+
+    // Reset game for new level
+    flowTokenRef.current += 1;
+    clearAnswerTimer();
+    stopCurrentAudio();
+    const firstTask = createTask(selectedTables, null, activeOperation, levelId);
+    setTask(firstTask);
+    setOptions(activeOperation !== "multiplication" ? generateOperationOptions(firstTask) : createOptions(firstTask, learningState, { round: 0, streak: 0, consecutivePerfectRounds }));
+    setTypedAnswer("");
+    setScore(0);
+    setRound(0);
+    setStreak(0);
+    setFeedback(getModeIntroFeedback(answerMode));
+    setLastWasCorrect(null);
+    setGameFinished(false);
+    setIsChecking(false);
+  }
+
+  function switchSchoolClass(cls) {
+    saveSchoolClass(cls);
+    setSchoolClassState(cls);
   }
 
   function setAnswerMode(nextMode, { manual = false, announce = false } = {}) {
@@ -1780,6 +1885,54 @@ export default function App() {
               </div>
             </div>
 
+            {/* Operation Selector */}
+            <div className="operation-selector" role="group" aria-label="Rechenart wählen">
+              {CLASS_OPERATIONS[schoolClass]?.map((opId) => {
+                const op = OPERATIONS[opId];
+                return (
+                  <button
+                    key={opId}
+                    type="button"
+                    className={`operation-btn${activeOperation === opId ? " active" : ""}`}
+                    aria-pressed={activeOperation === opId}
+                    onClick={() => switchOperation(opId)}
+                    title={op.label}
+                    disabled={isChecking}
+                  >
+                    <span className="operation-symbol">{op.symbol}</span>
+                    <span className="operation-label">{op.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Level Selector */}
+            {(() => {
+              const op = OPERATIONS[activeOperation];
+              if (!op) return null;
+              return (
+                <div className="level-selector" role="group" aria-label="Level wählen">
+                  {op.levels.map((lvl, idx) => {
+                    const isUnlocked = idx === 0 || unlockedLevels.includes(lvl.id);
+                    const isActive = activeLevelId === lvl.id;
+                    return (
+                      <button
+                        key={lvl.id}
+                        type="button"
+                        className={`level-btn${isActive ? " active" : ""}${!isUnlocked ? " locked" : ""}`}
+                        aria-pressed={isActive}
+                        onClick={() => isUnlocked && switchLevel(lvl.id)}
+                        title={isUnlocked ? lvl.description : "Noch gesperrt – erst vorherige Stufe meistern!"}
+                        disabled={isChecking || !isUnlocked}
+                      >
+                        {!isUnlocked ? "🔒" : isActive ? "▶ " : ""}{lvl.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
             <div className="game-status-strip" aria-label="Aktueller Spielstatus">
               <div className="game-status-pill game-status-pill-round">
                 <span>Runde</span>
@@ -1789,16 +1942,35 @@ export default function App() {
                 <span>Punkte</span>
                 <strong>{score}/{ROUNDS_PER_GAME}</strong>
               </div>
-              <div className="game-status-pill game-status-pill-tables">
-                <span>Reihen</span>
-                <strong>{selectedTables.join(", ")}</strong>
-              </div>
+              {activeOperation === "multiplication" ? (
+                <div className="game-status-pill game-status-pill-tables">
+                  <span>Reihen</span>
+                  <strong>{selectedTables.join(", ")}</strong>
+                </div>
+              ) : null}
+              {streak >= 3 ? (
+                <div className="game-status-pill game-status-pill-streak streak-hot">
+                  <span>Serie</span>
+                  <strong>🔥 {streak}</strong>
+                </div>
+              ) : null}
               {activeChallenge ? (
                 <div className="game-status-pill game-status-pill-challenge challenge">
                   <span>Challenge</span>
                   <strong>{activeChallenge.shortTitle}</strong>
                 </div>
               ) : null}
+            </div>
+
+            {/* Fortschrittsbalken */}
+            <div className="round-progress-bar" aria-hidden="true">
+              <div
+                className="round-progress-fill"
+                style={{ width: `${Math.round((round / ROUNDS_PER_GAME) * 100)}%` }}
+              />
+              {Array.from({ length: ROUNDS_PER_GAME }, (_, i) => (
+                <div key={i} className={`round-dot${i < round ? (i < score ? " correct" : " wrong") : ""}`} />
+              ))}
             </div>
 
             {lastWasCorrect !== null ? (
@@ -1858,7 +2030,7 @@ export default function App() {
               <>
                 <div className="task-card">
                   <p>Rechne aus</p>
-                  <div>{task.a} × {task.b}</div>
+                  <div>{task.a} {task.operator ?? "×"} {task.b}</div>
                 </div>
 
                 {answerMode === ANSWER_MODES.TYPED ? (
@@ -1870,11 +2042,11 @@ export default function App() {
                         id="typed-answer"
                         inputMode="numeric"
                         min="0"
-                        max="100"
+                        max={getAnswerRange(activeOperation, activeLevelId).max}
                         type="number"
                         value={typedAnswer}
                         onChange={(event) => setTypedAnswer(event.target.value)}
-                        placeholder="0 bis 100"
+                        placeholder={`0 bis ${getAnswerRange(activeOperation, activeLevelId).max}`}
                         className="answer-input"
                         disabled={isChecking}
                         data-testid="answer-input"
@@ -1904,9 +2076,32 @@ export default function App() {
                 <strong>{score}/{ROUNDS_PER_GAME}</strong>
                 <span>
                   {score >= 8
-                    ? "Klasse Ergebnis. Du kannst jetzt dieselben Tafeln noch einmal sicher üben oder neue dazunehmen."
+                    ? "Klasse Ergebnis! Du kannst weiter üben oder ein neues Level ausprobieren."
                     : "Gute Übung. Starte gern direkt noch eine ruhige nächste Runde."}
                 </span>
+
+                {levelUnlockBanner ? (
+                  <div className="level-unlock-banner">
+                    <div className="level-unlock-stars">⭐⭐⭐</div>
+                    <strong>Level freigeschaltet!</strong>
+                    <p>Du hast <em>{levelUnlockBanner.levelLabel}</em> gemeistert.</p>
+                    <p>Neues Level: <strong>{levelUnlockBanner.nextLevelLabel}</strong></p>
+                    <button
+                      type="button"
+                      className="submit-button"
+                      onClick={() => switchLevel(levelUnlockBanner.nextLevelId)}
+                    >
+                      Neues Level starten 🚀
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setLevelUnlockBanner(null)}
+                    >
+                      Erst weiter üben
+                    </button>
+                  </div>
+                ) : null}
 
                 {showTableSelector ? (
                   <div className="finish-table-selector">
@@ -1995,6 +2190,34 @@ export default function App() {
             >
               🦖 Dino-Sammlung
             </button>
+          </section>
+
+          <section className="mobile-utility-section">
+            <button
+              type="button"
+              className={expandedMobileSection === "class" ? "mobile-section-toggle active" : "mobile-section-toggle"}
+              onClick={() => toggleMobileSection("class")}
+            >
+              🏫 Klasse wählen
+            </button>
+            {expandedMobileSection === "class" ? (
+              <div className="mobile-section-body">
+                <p className="mobile-section-label">In welcher Klasse bist du?</p>
+                <div className="class-selector">
+                  {[1, 2, 3, 4].map((cls) => (
+                    <button
+                      key={cls}
+                      type="button"
+                      className={schoolClass === cls ? "class-btn active" : "class-btn"}
+                      aria-pressed={schoolClass === cls}
+                      onClick={() => switchSchoolClass(cls)}
+                    >
+                      {CLASS_LABELS[cls]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </section>
 
           <section className="mobile-utility-section">

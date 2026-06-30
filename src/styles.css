@@ -1459,3 +1459,219 @@ h1 {
     transition: none !important;
   }
 }
+
+/* ── Grundrechenarten: Operation Selector ────────────────────────────────── */
+.operation-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.operation-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 64px;
+  min-height: 52px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 2px solid rgba(85, 133, 103, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink);
+  font-weight: 700;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.operation-btn:hover:not(:disabled) {
+  background: var(--green-soft);
+  border-color: var(--green);
+}
+
+.operation-btn.active {
+  background: var(--green);
+  border-color: var(--green-deep);
+  color: #fff;
+}
+
+.operation-symbol {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.operation-label {
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* ── Level Selector ─────────────────────────────────────────────────────── */
+.level-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.level-btn {
+  min-height: 36px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(85, 133, 103, 0.2);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.level-btn:hover:not(:disabled):not(.locked) {
+  background: var(--sun-soft);
+  border-color: var(--sun);
+}
+
+.level-btn.active {
+  background: var(--sun);
+  border-color: #e5a800;
+  color: #3d2800;
+}
+
+.level-btn.locked {
+  color: #aaa;
+  background: #f5f5f0;
+  border-color: #ddd;
+  cursor: not-allowed;
+}
+
+/* ── Streak Pill ─────────────────────────────────────────────────────────── */
+.game-status-pill.streak-hot {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  border-color: rgba(255, 140, 0, 0.35);
+  animation: streakPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes streakPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+/* ── Progress Bar ────────────────────────────────────────────────────────── */
+.round-progress-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+
+.round-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 7px;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--green) 0%, var(--sun) 100%);
+  transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 0;
+}
+
+.round-dot {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(85, 133, 103, 0.25);
+  background: #fff;
+  z-index: 1;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.round-dot.correct {
+  background: var(--green);
+  border-color: var(--green-deep);
+}
+
+.round-dot.wrong {
+  background: #e05a5a;
+  border-color: #b03030;
+}
+
+/* ── Level Unlock Banner ─────────────────────────────────────────────────── */
+.level-unlock-banner {
+  margin: 12px 0;
+  padding: 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fff8d0 0%, #fffbe0 100%);
+  border: 2px solid var(--sun);
+  text-align: center;
+  animation: unlockPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes unlockPop {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.level-unlock-stars {
+  font-size: 1.6rem;
+  margin-bottom: 6px;
+  animation: starSpin 0.8s ease-out;
+}
+
+@keyframes starSpin {
+  from { transform: rotate(-20deg) scale(0.5); }
+  to { transform: rotate(0deg) scale(1); }
+}
+
+.level-unlock-banner strong {
+  display: block;
+  font-size: 1.1rem;
+  color: var(--green-deep);
+  margin-bottom: 4px;
+}
+
+.level-unlock-banner p {
+  margin: 4px 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.level-unlock-banner .submit-button {
+  margin: 10px auto 6px;
+  display: block;
+  width: auto;
+}
+
+/* ── Class Selector ─────────────────────────────────────────────────────── */
+.class-selector {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.class-btn {
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 2px solid rgba(85, 133, 103, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.class-btn.active {
+  background: var(--green);
+  border-color: var(--green-deep);
+  color: #fff;
+}
+
+.class-btn:hover:not(.active) {
+  background: var(--green-soft);
+}
