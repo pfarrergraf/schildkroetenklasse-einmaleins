@@ -2016,18 +2016,18 @@ export default function App() {
 
                 {answerMode === ANSWER_MODES.TYPED ? (
                   <form onSubmit={handleSubmit} className="answer-form play-answer-form">
-                    <label className="answer-label" htmlFor="typed-answer">Deine Antwort</label>
                     <div className="answer-row">
                       <input
                         ref={inputRef}
                         id="typed-answer"
+                        aria-label="Antwort eingeben"
                         inputMode="numeric"
                         min="0"
                         max={getAnswerRange(activeOperation, activeLevelId).max}
                         type="number"
                         value={typedAnswer}
                         onChange={(event) => setTypedAnswer(event.target.value)}
-                        placeholder={`0 bis ${getAnswerRange(activeOperation, activeLevelId).max}`}
+                        placeholder={`0 – ${getAnswerRange(activeOperation, activeLevelId).max}`}
                         className="answer-input"
                         disabled={isChecking}
                         data-testid="answer-input"

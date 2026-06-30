@@ -1355,9 +1355,49 @@ h1 {
     flex-direction: column;
   }
 
+  /* In the game answer form: keep input+button side by side */
+  .play-answer-form .answer-row {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .play-answer-form .submit-button {
+    width: auto;
+    min-height: 52px;
+    flex-shrink: 0;
+    padding: 0 18px;
+  }
+
+  /* Remove the box from the in-game answer form */
+  .play-answer-form {
+    background: transparent;
+    border: none;
+    padding: 0;
+    gap: 6px;
+    box-shadow: none;
+  }
+
+  /* Compact mode toggle */
+  .answer-mode-toggle {
+    gap: 5px;
+    margin-top: 5px;
+    margin-bottom: 6px;
+  }
+
+  .answer-mode-toggle .settings-toggle-button {
+    min-height: 36px;
+    font-size: 0.8rem;
+    border-radius: 12px;
+  }
+
+  /* Remove redundant label – placeholder already shows the range */
+  .answer-label {
+    display: none;
+  }
+
   .submit-button {
     width: 100%;
-    min-height: 58px;
+    min-height: 52px;
   }
 
   .mobile-menu-toggle {
@@ -1442,8 +1482,8 @@ h1 {
 }
 
 /* ── Tastatur offen / sehr kleiner Viewport ──────────────────────────────── */
-/* Greift wenn der Browser-Viewport < 480px hoch ist (Softwaretastatur offen) */
-@media (max-height: 480px) {
+/* Greift bei Softwaretastatur offen (Samsung A36 ~520px, Schwelle 560px) */
+@media (max-height: 560px) {
   .play-panel {
     min-height: 0;
   }
@@ -1527,6 +1567,10 @@ h1 {
     display: none;
   }
 
+  .typed-mode-coach {
+    display: none;
+  }
+
   .feedback {
     padding: 6px 10px;
     font-size: 0.85rem;
@@ -1534,7 +1578,7 @@ h1 {
 }
 
 /* ── Sehr schmaler + kleiner Viewport (Landscape Mobile mit Tastatur) ─────── */
-@media (max-height: 380px) {
+@media (max-height: 440px) {
   .turtle-panel {
     display: none !important;
   }
